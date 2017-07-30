@@ -9,8 +9,10 @@
 #include "Eigen-3.3/Eigen/QR"
 #include "json.hpp"
 //added by binliu 170729
+#include "vehicle.h"
 #include "road.h"
 #include "spline.h"
+#include "polyTrajectoryGenerator.h"
 //end add
 
 using namespace std;
@@ -202,7 +204,6 @@ vector<double> getLocalXY(double car_x, double car_y, double theta, double wx, d
   return results;
 }
 
-// segment of 25 x,y coordinates for waypoints (6 in the back, 1 closest and 18 in the front) for a given lane
 void fit_spline_segment(double car_s, vector<double> const &map_waypoints_s, vector<double> const &map_waypoints_x, vector<double> const &map_waypoints_y, vector<double> const &map_waypoints_dx, vector<double> const &map_waypoints_dy, vector<double> &waypoints_segment_s, vector<double> &waypoints_segment_s_worldSpace, vector<double> &map_waypoints_x_upsampled, vector<double> &map_waypoints_y_upsampled, vector<double> &map_waypoints_s_upsampled, vector<double> &map_waypoints_dx_upsampled, vector<double> &map_waypoints_dy_upsampled, tk::spline &spline_fit_s_to_x, tk::spline &spline_fit_s_to_y, tk::spline &spline_fit_s_to_dx, tk::spline &spline_fit_s_to_dy) {
   // get 10 previous and 15 next waypoints
   vector<double> waypoints_segment_x, waypoints_segment_y, waypoints_segment_dx, waypoints_segment_dy;
@@ -243,6 +244,7 @@ void fit_spline_segment(double car_s, vector<double> const &map_waypoints_s, vec
     else
       waypoints_segment_s.push_back(map_waypoints_s[cur_wp_i] - seg_start_s);
   }
+
   spline_fit_s_to_x.set_points(waypoints_segment_s, waypoints_segment_x);
   spline_fit_s_to_y.set_points(waypoints_segment_s, waypoints_segment_y);
   spline_fit_s_to_dx.set_points(waypoints_segment_s, waypoints_segment_dx);
@@ -263,6 +265,7 @@ void fit_spline_segment(double car_s, vector<double> const &map_waypoints_s, vec
   }
 }
 
+
   // converts world space s coordinate to local space based on provided mapping
 double get_local_s(double world_s, vector<double> const &waypoints_segment_s_worldSpace, vector<double> const &waypoints_segment_s) {
   int prev_wp = 0;
@@ -280,6 +283,7 @@ double get_local_s(double world_s, vector<double> const &waypoints_segment_s_wor
 }
 
 
+
 int main() {
   uWS::Hub h;
 
@@ -290,7 +294,8 @@ int main() {
 //   static ofstream out_log = ofstream(log_file.data(), ios::app);
   static ofstream out_log = ofstream(log_file.data());
 
-  out_log << "t,x,y,yaw,laneid" << endl;
+  out_log << "t,x,y,yaw,car_s,car_local_s,prev_car_s[1],prev_car_s[2],car_d,prev_car_d[1],prev_car_d[2]" << endl;
+
   // Load up map values for waypoint's x,y,s and d normalized normal vectors
   vector<double> map_waypoints_x;
   vector<double> map_waypoints_y;
@@ -301,8 +306,11 @@ int main() {
   // Waypoint map to read from
   string map_file_ = "../data/highway_map.csv";
   // The max s value before wrapping around the track back to 0
-  static double nextd = 6.;  
+  const static double nextd = 6.;  
   double max_s = 6945.554;
+  // max speed ~ 49.75MPH
+  const static double inc_max = 0.4425;
+  const static double dist_inc = inc_max;  
 
   ifstream in_map_(map_file_.c_str(), ifstream::in);
 
@@ -327,18 +335,19 @@ int main() {
   }
 
 //added by binliu 170729
-  	static Road road = Road(SPEED_LIMIT, TRAFFIC_DENSITY, LANE_SPEEDS);
+  	Road road = Road(SPEED_LIMIT, TRAFFIC_DENSITY, LANE_SPEEDS);
 	road.update_width = AMOUNT_OF_ROAD_VISIBLE;	  
 	int goal_s = max_s;	
 	int goal_lane = 0;	
 	int num_lanes = LANE_SPEEDS.size();
 	vector<int> ego_config = {SPEED_LIMIT,num_lanes,goal_s,goal_lane,MAX_ACCEL};	
 	road.add_ego(0,0, ego_config);	
-	static Vehicle ego = road.get_ego();
+	Vehicle ego = road.get_ego();
+	PolyTrajectoryGenerator PTG;	
 	
 //end add	  
 
-  h.onMessage([&map_waypoints_x,&map_waypoints_y,&map_waypoints_s,&map_waypoints_dx,&map_waypoints_dy](uWS::WebSocket<uWS::SERVER> * ws, char *data, size_t length,
+  h.onMessage([&map_waypoints_x,&map_waypoints_y,&map_waypoints_s,&map_waypoints_dx,&map_waypoints_dy,&road, &ego, &PTG](uWS::WebSocket<uWS::SERVER> * ws, char *data, size_t length,
                      uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
@@ -380,6 +389,9 @@ int main() {
           	vector<double> next_x_vals;
           	vector<double> next_y_vals;
 
+			int path_size = previous_path_x.size();
+			int num_points = 50;			  
+
           // ###################################################  
           // TEST - Just go straight
           // ###################################################
@@ -395,13 +407,6 @@ int main() {
 		  
 
           	// TODO: define a path made up of (x,y) points that the car will visit sequentially every .02 seconds
-			// ego.car_x = car_x;			  
-			// ego.car_y = car_y;			  
-			// ego.car_s = car_s;			  
-			// ego.car_d = car_d;			  
-			// ego.car_yaw = car_yaw;			  
-			// ego.car_speed = car_speed;			  						
-			// ego.lane = round(round(car_d-2)/4);
 
 			// figure out current lane
 			// 0: left, 1: middle, 2: right
@@ -411,38 +416,20 @@ int main() {
 
 			// update actual position
 			ego.set_frenet_pos(car_s, car_d);
-
-            // get last known car state
-            vector<double> prev_car_s = ego.get_s();
-            vector<double> prev_car_d = ego.get_d(); 		
-
-			// get our frenet coordinates
-			// vector<double> frenet = getFrenet(car_x, car_y, deg2rad(car_yaw), map_waypoints_x, map_waypoints_y);
-            // extract surrounding waypoints and fit a spline
-			// set up lane tracking using spline
-			// vector<vector<double>> localwps = getLocalizedWayPointSegement(car_x, car_y, car_yaw, nextd, map_waypoints_x, map_waypoints_y, map_waypoints_dx, map_waypoints_dy);			
-			
+			ego.car_x = car_x;
+			ego.car_y = car_y;			
+			ego.car_yaw = car_yaw;						
 
 			// ###################################################  
 			// PATH PLANNING 
 			// ###################################################			
-			
 			int horizon = 200;
-			bool smooth_path = previous_path_x.size() > 0;
-			int update_interval = 50; // update every second				
+			int update_interval = 50; // update every second
 			
-			// out_log << timestep << "," << ego.car_x << "," << ego.car_y << "," << ego.car_yaw << "," << ego.lane << endl;				
-			out_log << timestep 
-				<< "," << ego.car_x << "," << ego.car_y << "," << ego.car_yaw 
-				<< "," << ego.lane  
-				<< "," << prev_car_s[0]  << "," << prev_car_d[0]  
-				// << "," << localwps[0][0]  << "," << localwps[0][1]				
-				<< endl;
-
-			if (previous_path_x.size() < horizon - update_interval) {
-				out_log << endl;
-				out_log << "PATH UPDATE" << endl;
-
+			if (path_size < horizon - update_interval) {
+				cout << endl;
+				cout << "PATH UPDATE" << endl;
+				
 				// extract surrounding waypoints and fit a spline
 				vector<double> waypoints_segment_s;
 				vector<double> waypoints_segment_s_worldSpace;
@@ -475,9 +462,18 @@ int main() {
 				vector<double> prev_car_d = ego.get_d();            
 				// collect best guess at current car state. S position in local segment space
 				vector<double> car_state = {car_local_s, prev_car_s[1], prev_car_s[2], car_d, prev_car_d[1], prev_car_d[2]};
-			
 
-		  }				
+				// PLAN NEW PATH
+	//            cout << "planning path" << endl;				
+				vector<vector<double>> new_path = PTG.generate_trajectory(car_state, road.speed_limit, horizon, envir_vehicles);				
+
+            
+				out_log << timestep 
+					<< "," << ego.car_x << "," << ego.car_y << "," << ego.car_yaw 
+					<< "," << car_s << "," <<car_local_s << "," << prev_car_s[1]  << "," << prev_car_s[2] 
+					<< "," << car_d	<< "," << prev_car_d[1]  << "," << prev_car_d[2] 
+					<< endl;				
+			}
 
           // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           // END - PATH PLANNING

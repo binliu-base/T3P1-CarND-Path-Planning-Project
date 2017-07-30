@@ -49,7 +49,7 @@ public:
 
   	void populate_traffic();
 
-  	void advance();
+  	// void advance();
 
   	void display(int timestep);
 

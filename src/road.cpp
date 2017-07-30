@@ -56,33 +56,33 @@ void Road::populate_traffic() {
 	
 }
 
-void Road::advance() {
+// void Road::advance() {
 	
-	map<int ,vector<vector<int> > > predictions;
+// 	map<int ,vector<vector<int> > > predictions;
 
-	map<int, Vehicle>::iterator it = this->vehicles.begin();
-    while(it != this->vehicles.end())
-    {
-        int v_id = it->first;
-        vector<vector<int> > preds = it->second.generate_predictions(10);
-        predictions[v_id] = preds;
-        it++;
-    }
-	it = this->vehicles.begin();
-	while(it != this->vehicles.end())
-    {
-    	int v_id = it->first;
-        if(v_id == ego_key)
-        {
-        	it->second.update_state(predictions);
-        	it->second.realize_state(predictions);
-        }
-        it->second.increment(1);
+// 	map<int, Vehicle>::iterator it = this->vehicles.begin();
+//     while(it != this->vehicles.end())
+//     {
+//         int v_id = it->first;
+//         vector<vector<int> > preds = it->second.generate_predictions(10);
+//         predictions[v_id] = preds;
+//         it++;
+//     }
+// 	it = this->vehicles.begin();
+// 	while(it != this->vehicles.end())
+//     {
+//     	int v_id = it->first;
+//         if(v_id == ego_key)
+//         {
+//         	it->second.update_state(predictions);
+//         	it->second.realize_state(predictions);
+//         }
+//         it->second.increment(1);
         
-        it++;
-    }
+//         it++;
+//     }
     
-}
+// }
 
 void Road::display(int timestep) {
 

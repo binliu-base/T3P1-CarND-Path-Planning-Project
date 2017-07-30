@@ -75,7 +75,8 @@ public:
 
   void increment(int dt);
 
-  vector<int> state_at(int t);
+  // vector<int> state_at(int t);
+  vector<double> state_at(double t) const;
 
   bool collides_with(Vehicle other, int at_time);
 
@@ -93,7 +94,7 @@ public:
 
   void realize_prep_lane_change(map<int,vector< vector<int> > > predictions, string direction);
 
-  vector<vector<int> > generate_predictions(int horizon);
+  // vector<vector<int> > generate_predictions(int horizon);
 
   vector<string> get_successor_states();
 

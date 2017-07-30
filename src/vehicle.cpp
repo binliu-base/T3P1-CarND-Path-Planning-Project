@@ -168,7 +168,7 @@ void Vehicle::update_state(map<int,vector < vector<int> > > predictions) {
          cout << "successor_state " << successor_state << " " << " successor_cost" << successor_cost << endl;
          if (successor_cost < max_cost){
             state = successor_state;
-            max_cost = successor_cost;
+            max_cost = successor_cost; 
          }
 
     }
@@ -205,14 +205,23 @@ void Vehicle::increment(int dt = 1) {
     this->v += this->a * dt;
 }
 
-vector<int> Vehicle::state_at(int t) {
+// vector<int> Vehicle::state_at(int t) {
 
-	/*
-    Predicts state of vehicle in t seconds (assuming constant acceleration)
-    */
-    int s = this->s + this->v * t + this->a * t * t / 2;
-    int v = this->v + this->a * t;
-    return {this->lane, s, v, this->a};
+// 	/*
+//     Predicts state of vehicle in t seconds (assuming constant acceleration)
+//     */
+//     int s = this->s + this->v * t + this->a * t * t / 2;
+//     int v = this->v + this->a * t;
+//     return {this->lane, s, v, this->a};
+// }
+
+// returns frenet coordinates of predicted position at time t
+// simplified assumption in line with project constraints
+// - vehicle stays in lane
+// - vehicle has constant speed
+vector<double> Vehicle::state_at(double t) const {
+  double new_s = _pos_s + t * _vel_s;
+  return {new_s, _pos_d};
 }
 
 bool Vehicle::collides_with(Vehicle other, int at_time) {
@@ -220,8 +229,8 @@ bool Vehicle::collides_with(Vehicle other, int at_time) {
 	/*
     Simple collision detection.
     */
-    vector<int> check1 = state_at(at_time);
-    vector<int> check2 = other.state_at(at_time);
+    vector<double> check1 = state_at(at_time);
+    vector<double> check2 = other.state_at(at_time);
     return (check1[0] == check2[0]) && (abs(check1[1]-check2[1]) <= L);
 }
 
@@ -415,18 +424,18 @@ void Vehicle::realize_prep_lane_change(map<int,vector<vector<int> > > prediction
 
 }
 
-vector<vector<int> > Vehicle::generate_predictions(int horizon = 200) {
+// vector<vector<int> > Vehicle::generate_predictions(int horizon = 200) {
 
-	vector<vector<int> > predictions;
-    for( int i = 0; i < horizon; i++)
-    {
-      vector<int> check1 = state_at(i);
-      vector<int> lane_s = {check1[0], check1[1]};
-      predictions.push_back(lane_s);
-  	}
-    return predictions;
+// 	vector<vector<int> > predictions;
+//     for( int i = 0; i < horizon; i++)
+//     {
+//       vector<double> check1 = state_at(i);
+//       vector<double> lane_s = {check1[0], check1[1]};
+//       predictions.push_back(lane_s);
+//   	}
+//     return predictions;
 
-}
+// }
 
 // Added by binliu 170729
 void Vehicle::set_frenet_pos(double pos_s, double pos_d) {
