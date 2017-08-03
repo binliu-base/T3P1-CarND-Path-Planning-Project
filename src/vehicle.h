@@ -41,7 +41,10 @@ public:
 
   int lane;
 
-  int s;
+  // int s;
+  int vehicle_id;
+  double s;
+  double d;
 
   int v;
 
@@ -82,7 +85,7 @@ public:
 
   void update_state(map<int, vector <vector<int> > > predictions);
 
-  void configure(vector<int> road_data);
+  void configure(vector<double> road_data);
 
   // string display();
 
@@ -106,8 +109,10 @@ public:
   void realize_lane_change(map<int,vector< vector<int> > > predictions, string direction);
 
   void realize_prep_lane_change(map<int,vector< vector<int> > > predictions, string direction);
+  
+  void realize_car_starting();
 
-  // vector<vector<int> > generate_predictions(int horizon);
+  vector<vector<double> > generate_predictions(int horizon);
 
   vector<string> get_successor_states();
 

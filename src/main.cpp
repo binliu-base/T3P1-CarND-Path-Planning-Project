@@ -1,15 +1,23 @@
 // #include "header.h"
 #include "PathPlanner.h"
 
+// trace_tag = true;
+string Tools::tracelog =  "../data/logger.csv";
+// ofstream Tools::traceStream = ofstream(Tools::tracelog.data(), ios::app);
+ofstream Tools::traceStream = ofstream(Tools::tracelog.data());
 
 // for convenience
 using json = nlohmann::json;
 
 static void readWPFile(PathPlanner::WP_MAP &Map);
 
+static int timestep = 0;
+
 int main() {
   uWS::Hub h;
 
+  Tools::traceStream << "t,x,y,yaw,car_s,car_local_s,prev_car_s[1],prev_car_s[2],car_d,prev_car_d[1],prev_car_d[2]" << endl;
+  
   // Load up map values for waypoint's x,y,s and d normalized normal vectors
 	// /* Read in the waypoint file */
 	PathPlanner::WP_MAP WpMap;
@@ -38,12 +46,22 @@ int main() {
         
         if (event == "telemetry") {
           // j[1] is the data JSON object
-          
+
+						/* Get the previous path */
+						vvd_t vvPrevPath = 
+						{
+								j[1]["previous_path_x"],
+								j[1]["previous_path_y"]
+						};
+
+						/* Sensor Fusion Data, a list of all other cars on the same side of the road. */
+						vvd_t vvSenFus = j[1]["sensor_fusion"];          
+
         	// SDC car's localization Data
           	double car_yaw = j[1]["yaw"];
 
 						/* Get the car state */
-						PathPlanner::CAR_STATE oState = 
+						Vehicle::CAR_STATE oCarState = 
 						{
 								j[1]["x"],
 								j[1]["y"],
@@ -54,18 +72,8 @@ int main() {
 								j[1]["speed"]
 						};
 
-						/* Get the previous path */
-						vvd_t vvPrevPath = 
-						{
-								j[1]["previous_path_x"],
-								j[1]["previous_path_y"]
-						};
-
-						/* Sensor Fusion Data, a list of all other cars on the same side of the road. */
-						vvd_t vvSenFus = j[1]["sensor_fusion"];
-
 						/* Call the path planner */
-						vvd_t vvResult = planner.Plan(oState, vvPrevPath, vvSenFus);
+						vvd_t vvPathPlan = planner.GeneratePathPlan(oCarState, vvPrevPath, vvSenFus);
 						
 						/* Create the JSON */
           	json msgJson;
@@ -76,13 +84,16 @@ int main() {
           	// TODO: define a path made up of (x,y) points that the car will visit sequentially every .02 seconds
           	// msgJson["next_x"] = next_x_vals;
           	// msgJson["next_y"] = next_y_vals;
-						msgJson["next_x"] = vvResult[0];
-						msgJson["next_y"] = vvResult[1];						
+						msgJson["next_x"] = vvPathPlan[0];
+						msgJson["next_y"] = vvPathPlan[1];						
 
           	auto msg = "42[\"control\","+ msgJson.dump()+"]";
 
           	//this_thread::sleep_for(chrono::milliseconds(1000));
           	(*ws).send(msg.data(), msg.length(), uWS::OpCode::TEXT);
+
+            timestep++;
+            Tools::traceStream << "timestep=" << timestep << endl;            
           
         }
       } else {

@@ -49,12 +49,14 @@ vector<string> Vehicle::get_successor_states() {
 
     vector<string> successor_states;
     
-    if (state.compare("KL") == 0) {
+    if (state.compare("CST") == 0) {   //Car Starting
+        successor_states.push_back("KL");
+    }
+    else if (state.compare("KL") == 0) {
         successor_states.push_back("KL");
         successor_states.push_back("PLCL");
         successor_states.push_back("PLCR");
     }
-
     else if (state.compare("PLCL") == 0) {
         successor_states.push_back("KL");
         successor_states.push_back("PLCL");        
@@ -186,7 +188,7 @@ void Vehicle::update_state(map<int,vector < vector<int> > > predictions) {
 
 }
 
-void Vehicle::configure(vector<int> road_data) {
+void Vehicle::configure(vector<double> road_data) {
 	/*
     Called by simulator before simulation begins. Sets various
     parameters which will impact the ego vehicle. 
@@ -275,6 +277,10 @@ void Vehicle::realize_state(map<int,vector < vector<int> > > predictions) {
     {
     	realize_constant_speed();
     }
+    else if(state.compare("CST") == 0)
+    {
+    	realize_car_starting();
+    }    
     else if(state.compare("KL") == 0)
     {
     	realize_keep_lane(predictions);
@@ -295,6 +301,11 @@ void Vehicle::realize_state(map<int,vector < vector<int> > > predictions) {
     {
     	realize_prep_lane_change(predictions, "R");
     }
+
+}
+
+void Vehicle::realize_car_starting(){
+
 
 }
 
@@ -435,18 +446,18 @@ void Vehicle::realize_prep_lane_change(map<int,vector<vector<int> > > prediction
 
 }
 
-// vector<vector<int> > Vehicle::generate_predictions(int horizon = 200) {
+vector<vector<double> > Vehicle::generate_predictions(int horizon = 200) {
 
-// 	vector<vector<int> > predictions;
-//     for( int i = 0; i < horizon; i++)
-//     {
-//       vector<double> check1 = state_at(i);
-//       vector<double> lane_s = {check1[0], check1[1]};
-//       predictions.push_back(lane_s);
-//   	}
-//     return predictions;
+	vector<vector<double> > predictions;
+    for( int i = 0; i < horizon; i++)
+    {
+      vector<double> check1 = state_at(i);
+      vector<double> lane_s = {check1[0], check1[1]};
+      predictions.push_back(lane_s);
+  	}
+    return predictions;
 
-// }
+}
 
 // Added by binliu 170729
 void Vehicle::set_frenet_pos(double pos_s, double pos_d) {

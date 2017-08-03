@@ -39,6 +39,10 @@ using spline = tk::spline;
 #define MAX_VEH_GAP         (200.0)     /*!< The maximum observable vehicle gap */
 #define MIN_LC_VOTES        (20)        /*!< The minimum number of votes needed to make a decision of lane change */
 
+//added by binliu 170802
+#define SPEED_LIMIT        (49.9) 
+//end add
+
 /* #################### SIMPLIFICATIONS #################### */
 typedef vector<int> vi_t;
 typedef vector<double> vd_t;
@@ -110,3 +114,29 @@ static double distance(const double x1, const double y1, const double x2, const 
     const double dYDiff = y2 - y1;
     return sqrt((dXDiff * dXDiff)  + (dYDiff * dYDiff));
 }
+
+
+ /**
+  *  Setup debuging
+  */ 
+
+using namespace std;
+
+class Tools {
+public:
+   /**
+  * Debug stuff
+  */ 
+  static string tracelog;
+  static bool trace_tag;
+  static ofstream  traceStream;  
+  /**
+  * Constructor.
+  */
+  Tools();
+
+  /**
+  * Destructor.
+  */
+  virtual ~Tools();
+};

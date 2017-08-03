@@ -1,4 +1,5 @@
 #include "header.h"
+#include "vehicle.h"
 
 #ifndef PATHPLANNER_H
 #define PATHPLANNER_H
@@ -6,17 +7,6 @@
 class PathPlanner
 {
 public:
-    /*! The car's current parameters */
-    typedef struct car_state
-    {
-        double x;
-        double y;
-        double s;
-        double d;
-        double yaw_d;
-        double yaw_r;
-        double v;
-    } CAR_STATE;
 
     typedef struct wp_map
     {
@@ -26,6 +16,12 @@ public:
         vd_t dx;
         vd_t dy;
     } WP_MAP;
+
+  	int goCar_key ;
+    map<int, Vehicle> vehicles;
+    // map<int, Vehicle> lane_speeds;
+  	int num_lanes = SIM_NUM_LANES;        
+
 
     /*!
     * @brief: Constructor to the PathPlanner class
@@ -40,10 +36,10 @@ public:
     */
     ~PathPlanner();
 
-    vvd_t Plan(CAR_STATE &State, vvd_t &PrevPath, vvd_t &SensorFusion);
-    void TrackLane(spline &hLaneSpline);
-    void TrackVelocityFirst(spline &hVelocitySpline);
-    void HandleFirstCycle(spline &hLaneSpline, vvd_t &vvResult);
+    vvd_t GeneratePathPlan(Vehicle::CAR_STATE &State, vvd_t &PrevPath, vvd_t &SensorFusion);
+    void CreateLaneSpline(spline &hLaneSpline);
+    void CreateVelocitySplineFirstCycle(spline &hVelocitySpline);
+    void HandleFirstCycle(spline &hLaneSpline,spline &hVelocitySpline, vvd_t &vvResult);
     void HandleGenericCycle(spline &hLaneSpline, vvd_t &vvResult);
     void BehaviourPlanner(void);
     void LaneChange(const vvvd_t &vvvLanes, const vvi_t &vvCars, const vi_t &vRanks);
@@ -57,13 +53,17 @@ public:
     vd_t getWorldXY(const double dX, const double dY);
     vvd_t getLocalPoints(const vd_t vdX, const vd_t vdY) ;
     vvd_t getWorldPoints(const vd_t vdX, const vd_t vdY) ;
+  	// Vehicle get_ego();    
+//added by binliu 170801
+    void add_goCar(int lane_num, double s,double d, vector<double> config_data);      
+    Vehicle get_goCar();
 
 private:
     /*! The waypoint map information */
     WP_MAP goMap;
 
     /*! The current state of the car */
-    CAR_STATE goCar;
+    Vehicle::CAR_STATE goCar;
 
     /*! The current lane of the car */
     int gnCurLane;

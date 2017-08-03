@@ -13,7 +13,10 @@
         goMap = Map;
 
         /* Save the size of the waypoints */
-        gnMapSz = goMap.x.size();
+        gnMapSz = goMap.x.size();   
+
+        goCar_key = 150118;        
+        // Tools::traceStream << "gnMapSz=" << gnMapSz << " goCar_key=" << this->goCar_key << endl;                    
     }
 
     /*!
@@ -30,12 +33,12 @@
     *
     * @returns: A path of {{x's}, {y's}} for the car to drive
     */
-    vvd_t PathPlanner::Plan(CAR_STATE &State, vvd_t &PrevPath, vvd_t &SensorFusion)
+    vvd_t PathPlanner::GeneratePathPlan(Vehicle::CAR_STATE &State, vvd_t &PrevPath, vvd_t &SensorFusion)
     {
         vvd_t vvResult;
 
         /* Save the current values */
-        memcpy(&goCar, &State, sizeof(CAR_STATE));
+        memcpy(&goCar, &State, sizeof(Vehicle::CAR_STATE));
         gvvPrPath = PrevPath;
         gvvSenFus = SensorFusion;
 
@@ -49,14 +52,20 @@
         /* Get the current lane */
         gnCurLane = (int)(round(round(goCar.d - 2.0) / 4.0));
 
-        /* Setup a lane tracker */
+        /* Setup a lane spline */
         spline hLaneSpline;
-        TrackLane(hLaneSpline);
+        CreateLaneSpline(hLaneSpline);
+
+        /* Setup a velocity spline */
+        spline hVelocitySpline;
+        CreateVelocitySplineFirstCycle(hVelocitySpline);        
 
         /* If this is the first cycle */
         if (gnPrPathSz == 0)
         {
-            HandleFirstCycle(hLaneSpline, vvResult);
+            vector<double> goCar_config = {SPEED_LIMIT} ;
+            add_goCar(gnCurLane, goCar.s,goCar.d, goCar_config);                  
+            HandleFirstCycle(hLaneSpline, hVelocitySpline, vvResult);
         }
         else
         {
@@ -80,7 +89,8 @@
     /*!
     * Computes a lane tracking spline in local car co-ordinates
     */
-    void PathPlanner::TrackLane(spline &hLaneSpline)
+    // void PathPlanner::TrackLane(spline &hLaneSpline)
+    void PathPlanner::CreateLaneSpline(spline &hLaneSpline)    
     {
         /* Get the surronding waypoints in local co-ordinates */
         vvd_t vvLocalWP = getLocalWPSeg();
@@ -99,7 +109,8 @@
     * Computes a velocity tracking spline for the first
     * cycle
     */
-    void PathPlanner::TrackVelocityFirst(spline &hVelocitySpline)
+    // void PathPlanner::TrackVelocityFirst(spline &hVelocitySpline)
+    void PathPlanner::CreateVelocitySplineFirstCycle(spline &hVelocitySpline)    
     {
         vd_t vTime, vDist;
 
@@ -114,25 +125,22 @@
         vDist.pb(gnNextS * 0.15);
         vDist.pb(gnNextS * 0.25);
         vDist.pb(gnNextS * 0.30);
-        vDist.pb(gnNextS * 0.50);
+        vDist.pb(gnNextS * 0.50);  
 
         /* Form the spline */
         hVelocitySpline.set_points(vTime, vDist);
+              
     }
 
     /*!
     * Handles the first cycle
     */
-    void PathPlanner::HandleFirstCycle(spline &hLaneSpline, vvd_t &vvResult)
+    void PathPlanner::HandleFirstCycle(spline &hLaneSpline,spline &hVelocitySpline, vvd_t &vvResult)
     {
         vd_t vLocalX;
         vd_t vLocalY;
         double dLocalX = 0.0;
         double dLocalY = 0.0;
-
-        /* Setup a velocity tracker */
-        spline hVelocitySpline;
-        TrackVelocityFirst(hVelocitySpline);
 
         /* Form a smooth localized lane using both velocity & lane splines */
         for (int i = 0; i < NUM_POINTS; i++)
@@ -187,8 +195,9 @@
         REQUIRE(vvLPath[0].size() == gnPrPathSz)
         REQUIRE(vvLPath[1].size() == gnPrPathSz)
 
-        /* Erase the completed portion of the previous history */
+        /* Erase the consumed waypoints of the previous history */
         gvvVelHist.erase(gvvVelHist.begin(), gvvVelHist.begin() + (NUM_POINTS - gnPrPathSz));
+        (gvvVelHist.begin(), gvvVelHist.begin() + (NUM_POINTS - gnPrPathSz));
         gvvPathHist[0].erase(gvvPathHist[0].begin(), gvvPathHist[0].begin() + (NUM_POINTS - gnPrPathSz));
         gvvPathHist[1].erase(gvvPathHist[1].begin(), gvvPathHist[1].begin() + (NUM_POINTS - gnPrPathSz));
 
@@ -202,7 +211,7 @@
         /*** PATH ***/
         /* Setup another lane tracker to include the previous path */
         spline hNewLane;
-        TrackLane(hNewLane);
+        CreateLaneSpline(hNewLane);
 
         /* Form a spline including the previous path */
         vd_t vLocalX;
@@ -296,6 +305,50 @@
     /*!
      * Behaviour planner
      */
+    // void PathPlanner::BehaviourPlanner(void)
+    // {
+    //     vvvd_t vvvLanes(SIM_NUM_LANES);
+
+    //     for (int i = 0; i < gnSenFusSz; i++) 
+    //     {
+    //         vd_t vVehicle = gvvSenFus[i];
+
+    //         /* Add the computed values into the sensor fusion structure */
+    //         /* Dist increments (velocity) of the car */
+    //         gvvSenFus[i].pb((distance(0.0, 0.0, vVehicle[3], vVehicle[4]) * SIM_TIME_SLICE));
+
+    //         /* Displacement of other car from ours */
+    //         gvvSenFus[i].pb(vVehicle[5] - goCar.s);
+
+    //         /* Add the cars into the corresponding lanes */
+    //         for (int j = 0; j < SIM_NUM_LANES; j++)
+    //         {
+    //             if ((vVehicle[6] >= ((j * SIM_LANE_WD) - LANE_BUFFER)) && (vVehicle[6] <= (((j + 1) * SIM_LANE_WD) + LANE_BUFFER)))
+    //             {
+    //                 vvvLanes[j].pb(gvvSenFus[i]);
+    //             }
+    //         }
+    //     }
+
+    //     /* Sort the lanes */
+    //     for (int i = 0; i < SIM_NUM_LANES; i++)
+    //     {
+    //         /* Sort based on the distance */
+    //         sort(vvvLanes[i].begin(), vvvLanes[i].end(),[](const std::vector<double>& a, const std::vector<double>& b) 
+    //         {
+    //             return a[8] < b[8];
+    //         });
+    //     }
+
+    //     /* Rank the lanes */
+    //     vi_t vLaneRanks;
+    //     vvi_t vvCloseCars;
+    //     RankLanes(vvvLanes, vvCloseCars, vLaneRanks);
+
+    //     /* Change lanes if feasible */
+    //     LaneChange(vvvLanes, vvCloseCars, vLaneRanks);
+    // }
+
     void PathPlanner::BehaviourPlanner(void)
     {
         vvvd_t vvvLanes(SIM_NUM_LANES);
@@ -311,14 +364,22 @@
             /* Displacement of other car from ours */
             gvvSenFus[i].pb(vVehicle[5] - goCar.s);
 
+			Vehicle vehicle = Vehicle();            
+            vehicle.s = vVehicle[5];            
+            vehicle.d = vVehicle[6]; 
+            vehicle.vehicle_id  = vVehicle[0]; 
+
             /* Add the cars into the corresponding lanes */
             for (int j = 0; j < SIM_NUM_LANES; j++)
             {
                 if ((vVehicle[6] >= ((j * SIM_LANE_WD) - LANE_BUFFER)) && (vVehicle[6] <= (((j + 1) * SIM_LANE_WD) + LANE_BUFFER)))
                 {
                     vvvLanes[j].pb(gvvSenFus[i]);
+                    vehicle.lane = j;
                 }
             }
+
+            this->vehicles.insert(std::pair<int,Vehicle>(i,vehicle));            
         }
 
         /* Sort the lanes */
@@ -338,7 +399,8 @@
 
         /* Change lanes if feasible */
         LaneChange(vvvLanes, vvCloseCars, vLaneRanks);
-    }
+ 
+    }    
 
     /*! Checks which of the lanes (including the current one)
      * is most feasible in the order of their rankings, and if
@@ -735,7 +797,7 @@
         {
             nPrevWP += gnMapSz;
         }
-
+        // Tools::traceStream << "getLocalWPSeg " << "line 746: " << "ClosestWp nWp=" << nWp << " WP_SPLINE_PREV =" << WP_SPLINE_PREV <<" nPrevWP=" << nPrevWP << " gnMapSz=" << gnMapSz << endl;                    
         /* Convert the waypoints into localaized points */
         for (int i = 0; i < WP_SPLINE_TOT; i++) 
         {
@@ -744,6 +806,8 @@
 
             vWpX.push_back(localxy[0]);
             vWpY.push_back(localxy[1]);
+            // Tools::traceStream << "getLocalWPSeg " << "line 753: " << "i=" << i << " nNextWP =" << nNextWP  << endl;                    
+
         }
 
         vvResults.push_back(vWpX);
@@ -810,3 +874,30 @@
 
         return vvResults;
     }
+
+
+    void PathPlanner::add_goCar(int lane_num, double s,double d,vector<double> config_data) {
+        
+        map<int, Vehicle>::iterator it = this->vehicles.begin();
+        while(it != this->vehicles.end())
+        {
+            int v_id = it->first;
+            Vehicle v = it->second;
+            if(v.lane == lane_num && v.s == s)
+            {
+                this->vehicles.erase(v_id);
+            }
+            it++;
+        }
+        Vehicle goCar = Vehicle(lane_num, s);
+        goCar.configure(config_data);
+        // ego.state = "KL";
+        goCar.state = "CST";        
+        this->vehicles.insert(std::pair<int,Vehicle>(goCar_key,goCar));        
+    }
+
+Vehicle PathPlanner::get_goCar() {
+	
+	return this->vehicles.find(this->goCar_key)->second;
+}    
+
