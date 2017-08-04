@@ -16,7 +16,7 @@ static int timestep = 0;
 int main() {
   uWS::Hub h;
 
-  Tools::traceStream << "t,x,y,yaw,car_s,car_local_s,prev_car_s[1],prev_car_s[2],car_d,prev_car_d[1],prev_car_d[2]" << endl;
+  // Tools::traceStream << "t,x,y,yaw,car_s,car_local_s,prev_car_s[1],prev_car_s[2],car_d,prev_car_d[1],prev_car_d[2]" << endl;
   
   // Load up map values for waypoint's x,y,s and d normalized normal vectors
 	// /* Read in the waypoint file */
@@ -61,7 +61,7 @@ int main() {
           	double car_yaw = j[1]["yaw"];
 
 						/* Get the car state */
-						Vehicle::CAR_STATE oCarState = 
+						Vehicle::GOCAR_STATE oCarState = 
 						{
 								j[1]["x"],
 								j[1]["y"],

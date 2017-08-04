@@ -15,7 +15,7 @@
         /* Save the size of the waypoints */
         gnMapSz = goMap.x.size();   
 
-        goCar_key = 150118;        
+        goCar_key = -1;        
         // Tools::traceStream << "gnMapSz=" << gnMapSz << " goCar_key=" << this->goCar_key << endl;                    
     }
 
@@ -33,12 +33,12 @@
     *
     * @returns: A path of {{x's}, {y's}} for the car to drive
     */
-    vvd_t PathPlanner::GeneratePathPlan(Vehicle::CAR_STATE &State, vvd_t &PrevPath, vvd_t &SensorFusion)
+    vvd_t PathPlanner::GeneratePathPlan(Vehicle::GOCAR_STATE &State, vvd_t &PrevPath, vvd_t &SensorFusion)
     {
         vvd_t vvResult;
 
         /* Save the current values */
-        memcpy(&goCar, &State, sizeof(Vehicle::CAR_STATE));
+        memcpy(&goCar, &State, sizeof(Vehicle::GOCAR_STATE));
         gvvPrPath = PrevPath;
         gvvSenFus = SensorFusion;
 
@@ -75,7 +75,21 @@
         /* Invoke the planner if there is no lane change in progress */
         if (gbLaneChange == false)
         {
+            Tools::traceStream << "Start ObservedVehicles()" << endl;                                    
+            ObservedVehicles();       
+            // Tools::traceStream << "Number of cars on the road:" << vehicles.size() << endl;                                    
+
+            Tools::traceStream << "Start Predictons()" << endl;                                                
+            map<int, Vehicle::VEHICLE_STATE> predictons = get_predictons() ;
+            // Tools::traceStream << "Number of Predictons:" << predictons.size() << endl;                                    
+
+            Tools::traceStream << "Start goCar.update_state(predictons)" << endl;                                                
+            Vehicle goCar = get_goCar();
+            goCar.update_state(predictons);
+
+            Tools::traceStream << "Start BehaviorPlanner()" << endl;                        
             BehaviourPlanner();    
+            Tools::traceStream << "End BehaviorPlanner" << endl;            
         }
 
         /* Increment the timestep */
@@ -305,50 +319,6 @@
     /*!
      * Behaviour planner
      */
-    // void PathPlanner::BehaviourPlanner(void)
-    // {
-    //     vvvd_t vvvLanes(SIM_NUM_LANES);
-
-    //     for (int i = 0; i < gnSenFusSz; i++) 
-    //     {
-    //         vd_t vVehicle = gvvSenFus[i];
-
-    //         /* Add the computed values into the sensor fusion structure */
-    //         /* Dist increments (velocity) of the car */
-    //         gvvSenFus[i].pb((distance(0.0, 0.0, vVehicle[3], vVehicle[4]) * SIM_TIME_SLICE));
-
-    //         /* Displacement of other car from ours */
-    //         gvvSenFus[i].pb(vVehicle[5] - goCar.s);
-
-    //         /* Add the cars into the corresponding lanes */
-    //         for (int j = 0; j < SIM_NUM_LANES; j++)
-    //         {
-    //             if ((vVehicle[6] >= ((j * SIM_LANE_WD) - LANE_BUFFER)) && (vVehicle[6] <= (((j + 1) * SIM_LANE_WD) + LANE_BUFFER)))
-    //             {
-    //                 vvvLanes[j].pb(gvvSenFus[i]);
-    //             }
-    //         }
-    //     }
-
-    //     /* Sort the lanes */
-    //     for (int i = 0; i < SIM_NUM_LANES; i++)
-    //     {
-    //         /* Sort based on the distance */
-    //         sort(vvvLanes[i].begin(), vvvLanes[i].end(),[](const std::vector<double>& a, const std::vector<double>& b) 
-    //         {
-    //             return a[8] < b[8];
-    //         });
-    //     }
-
-    //     /* Rank the lanes */
-    //     vi_t vLaneRanks;
-    //     vvi_t vvCloseCars;
-    //     RankLanes(vvvLanes, vvCloseCars, vLaneRanks);
-
-    //     /* Change lanes if feasible */
-    //     LaneChange(vvvLanes, vvCloseCars, vLaneRanks);
-    // }
-
     void PathPlanner::BehaviourPlanner(void)
     {
         vvvd_t vvvLanes(SIM_NUM_LANES);
@@ -364,22 +334,14 @@
             /* Displacement of other car from ours */
             gvvSenFus[i].pb(vVehicle[5] - goCar.s);
 
-			Vehicle vehicle = Vehicle();            
-            vehicle.s = vVehicle[5];            
-            vehicle.d = vVehicle[6]; 
-            vehicle.vehicle_id  = vVehicle[0]; 
-
             /* Add the cars into the corresponding lanes */
             for (int j = 0; j < SIM_NUM_LANES; j++)
             {
                 if ((vVehicle[6] >= ((j * SIM_LANE_WD) - LANE_BUFFER)) && (vVehicle[6] <= (((j + 1) * SIM_LANE_WD) + LANE_BUFFER)))
                 {
                     vvvLanes[j].pb(gvvSenFus[i]);
-                    vehicle.lane = j;
                 }
             }
-
-            this->vehicles.insert(std::pair<int,Vehicle>(i,vehicle));            
         }
 
         /* Sort the lanes */
@@ -399,8 +361,60 @@
 
         /* Change lanes if feasible */
         LaneChange(vvvLanes, vvCloseCars, vLaneRanks);
+    }
+
+    // void PathPlanner::BehaviourPlanner(void)
+    // {
+    //     vvvd_t vvvLanes(SIM_NUM_LANES);
+
+    //     for (int i = 0; i < gnSenFusSz; i++) 
+    //     {
+    //         vd_t vVehicle = gvvSenFus[i];
+
+    //         /* Add the computed values into the sensor fusion structure */
+    //         /* Dist increments (velocity) of the car */
+    //         gvvSenFus[i].pb((distance(0.0, 0.0, vVehicle[3], vVehicle[4]) * SIM_TIME_SLICE));
+
+    //         /* Displacement of other car from ours */
+    //         gvvSenFus[i].pb(vVehicle[5] - goCar.s);
+
+	// 		Vehicle vehicle = Vehicle();            
+    //         vehicle.s = vVehicle[5];            
+    //         vehicle.d = vVehicle[6]; 
+    //         // vehicle.vehicle_id  = vVehicle[0]; 
+
+    //         /* Add the cars into the corresponding lanes */
+    //         for (int j = 0; j < SIM_NUM_LANES; j++)
+    //         {
+    //             if ((vVehicle[6] >= ((j * SIM_LANE_WD) - LANE_BUFFER)) && (vVehicle[6] <= (((j + 1) * SIM_LANE_WD) + LANE_BUFFER)))
+    //             {
+    //                 vvvLanes[j].pb(gvvSenFus[i]);
+    //                 vehicle.lane = j;
+    //             }
+    //         }
+
+    //         this->vehicles.insert(std::pair<int,Vehicle>(vVehicle[0],vehicle)); 
+    //     }
+
+    //     /* Sort the lanes */
+    //     for (int i = 0; i < SIM_NUM_LANES; i++)
+    //     {
+    //         /* Sort based on the distance */
+    //         sort(vvvLanes[i].begin(), vvvLanes[i].end(),[](const std::vector<double>& a, const std::vector<double>& b) 
+    //         {
+    //             return a[8] < b[8];
+    //         });
+    //     }
+
+    //     /* Rank the lanes */
+    //     vi_t vLaneRanks;
+    //     vvi_t vvCloseCars;
+    //     RankLanes(vvvLanes, vvCloseCars, vLaneRanks);
+
+    //     /* Change lanes if feasible */
+    //     LaneChange(vvvLanes, vvCloseCars, vLaneRanks);
  
-    }    
+    // }    
 
     /*! Checks which of the lanes (including the current one)
      * is most feasible in the order of their rankings, and if
@@ -889,7 +903,8 @@
             }
             it++;
         }
-        Vehicle goCar = Vehicle(lane_num, s);
+        Vehicle goCar = Vehicle(lane_num, s, 0, 0);        
+        
         goCar.configure(config_data);
         // ego.state = "KL";
         goCar.state = "CST";        
@@ -901,3 +916,64 @@ Vehicle PathPlanner::get_goCar() {
 	return this->vehicles.find(this->goCar_key)->second;
 }    
 
+/******************************************************************
+*                          Predication Part
+*******************************************************************/
+
+// vector<vector<double> > PathPlanner::generate_predictions(int horizon = 10) {
+
+// 	vector<vector<double> > predictions;
+//     for( int i = 0; i < horizon; i++)
+//     {
+//       vector<int> check1 = state_at(i);
+//       vector<int> lane_s = {check1[0], check1[1]};
+//       predictions.push_back(lane_s);
+//   	}
+//     return predictions;
+
+// }
+
+void PathPlanner::ObservedVehicles() {
+    // turn sensor fusion data into Vehicle objects
+    for (int i = 0; i < gnSenFusSz; i++) {
+        int id = gvvSenFus[i][0 ]; 
+        double vx = gvvSenFus[i][3];
+        double vy = gvvSenFus[i][4]; 
+        double d =   gvvSenFus[i][6]; 
+        int lane =  (int)(round(round(d - 2.0) / 4.0));     
+        double s = gvvSenFus[i][5];
+        double velocity_per_timestep = sqrt(pow(vx, 2) + pow(vy, 2)) / 50.0;
+		Vehicle vehicle = Vehicle(lane,s,velocity_per_timestep,0);
+		this->vehicles.insert(std::pair<int,Vehicle>(id,vehicle));
+    }
+}
+
+// // returns frenet coordinates of predicted position at time t
+// // simplified assumption in line with project constraints
+// // - vehicle stays in lane
+// // - vehicle has constant speed
+// vector<double> PathPlanner::state_at(int t) const {
+//   double new_s = _pos_s + t * _vel_s;
+//   return {new_s, _pos_d};
+// }
+
+
+std::map<int, Vehicle::VEHICLE_STATE> PathPlanner::get_predictons(){
+
+    for (int i = 0; i < gnSenFusSz; i++) 
+    {
+        vd_t vVehicle = gvvSenFus[i];
+        // memcpy(&goCar, &State, sizeof(Vehicle::GOCAR_STATE));
+
+		//predict other traffic on the road into the future
+		// double new_s = s + s_dot * REUSE_PREV_POINTS_NUM * FRAME_UPDATE_TIME;
+        double s_dot = sqrt(vVehicle[3]*vVehicle[3] + vVehicle[4]*vVehicle[4]);
+		double new_s =  vVehicle[5]+  s_dot * WP_SPLINE_TOT * SIM_TIME_SLICE;        
+        double d = vVehicle[6];
+		Vehicle::VEHICLE_STATE start_state= {new_s, s_dot, 0, d, 0, 0};
+        int v_id = vVehicle[0];
+		predictions[v_id] = start_state;
+    }
+
+	return predictions;
+}

@@ -19,12 +19,12 @@
 //     max_acceleration = -1;
 // }
 
-Vehicle::Vehicle(int lane, int s) {
+Vehicle::Vehicle(int lane, double s, double v, double a) {
 
     this->lane = lane;
     this->s = s;
     state = "CS";    
-    // this->v = v;
+    this->v = v;
     // this->a = a;
     // state = "CS";
     // max_acceleration = -1;
@@ -90,7 +90,9 @@ vector<string> Vehicle::get_successor_states() {
 
 
 // TODO - Implement this method.
-void Vehicle::update_state(map<int,vector < vector<int> > > predictions) {
+
+void Vehicle::update_state(map<int, VEHICLE_STATE>  predictions) {
+   
 	/*
     Updates the "state" of the vehicle by assigning one of the
     following values to 'self.state':
@@ -136,19 +138,22 @@ void Vehicle::update_state(map<int,vector < vector<int> > > predictions) {
         return dl*dl;
     };
 
-    auto cl_cost = [this](int delta_lane, const map<int, vector<vector<int>>>& predictions) {
+    auto cl_cost = [this](int delta_lane, const map<int, VEHICLE_STATE>& predictions) {
 
         bool collision = false;
         for (auto it = predictions.begin(); it != predictions.end(); ++it) {
 
             int now = 0;
             int v_id = it->first;
-            vector<vector<int> > v = it->second;
+            // vector<vector<int> > v = it->second;
+            VEHICLE_STATE v = it->second;
             // cout << "s " << s << " lane " << lane <<  " v_id " << v_id << "  v[now][0]= "<< v[now][0] << "  v[now][1]= "<< v[now][1] <<endl;                
             // v_id = -1 is our car
             if (v_id != -1) {
             
-                bool collision = (abs(lane - v[now][0]) == 1) && (abs(s - v[now][1]) <= L);
+                // bool collision = (abs(lane - v[now][0]) == 1) && (abs(s - v[now][1]) <= L);
+                int vlane = (int)(round(round(v.d - 2.0) / 4.0));
+                bool collision = (abs(lane - vlane) == 0) && (abs(s - v.s) <= L);                
 
                 if (collision) {
                     return 100000.0;                                    

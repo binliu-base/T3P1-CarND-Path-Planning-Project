@@ -26,7 +26,18 @@ public:
         double yaw_d;
         double yaw_r;
         double v;
-    } CAR_STATE;
+    } GOCAR_STATE;
+
+    /*! The car's current parameters */
+    typedef struct sensor_fusion_state
+    {
+        double s;
+        double s_dot;  
+        double xxx1;      
+        double d;
+        double xxx2;              
+        double xxx3;                
+    } VEHICLE_STATE;    
 
   struct collider{
 
@@ -42,7 +53,6 @@ public:
   int lane;
 
   // int s;
-  int vehicle_id;
   double s;
   double d;
 
@@ -74,8 +84,8 @@ public:
   /**
   * Constructor
   */
-  // Vehicle(int lane, int s, int v, int a);
-  Vehicle(int lane, int s);
+  
+  Vehicle(int lane, double s, double v, double a);
   Vehicle();
 
   /**
@@ -83,7 +93,8 @@ public:
   */
   virtual ~Vehicle();
 
-  void update_state(map<int, vector <vector<int> > > predictions);
+  // void update_state(map<int, vector <vector<int> > > predictions);
+  void update_state(map<int, VEHICLE_STATE>  predictions) ;
 
   void configure(vector<double> road_data);
 

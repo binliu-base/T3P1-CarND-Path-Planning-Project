@@ -19,7 +19,7 @@ public:
 
   	int goCar_key ;
     map<int, Vehicle> vehicles;
-    // map<int, Vehicle> lane_speeds;
+	map<int, Vehicle::VEHICLE_STATE> predictions;
   	int num_lanes = SIM_NUM_LANES;        
 
 
@@ -36,7 +36,7 @@ public:
     */
     ~PathPlanner();
 
-    vvd_t GeneratePathPlan(Vehicle::CAR_STATE &State, vvd_t &PrevPath, vvd_t &SensorFusion);
+    vvd_t GeneratePathPlan(Vehicle::GOCAR_STATE &State, vvd_t &PrevPath, vvd_t &SensorFusion);
     void CreateLaneSpline(spline &hLaneSpline);
     void CreateVelocitySplineFirstCycle(spline &hVelocitySpline);
     void HandleFirstCycle(spline &hLaneSpline,spline &hVelocitySpline, vvd_t &vvResult);
@@ -57,14 +57,17 @@ public:
 //added by binliu 170801
     void add_goCar(int lane_num, double s,double d, vector<double> config_data);      
     Vehicle get_goCar();
+    void ObservedVehicles();
+    std::map<int, Vehicle::VEHICLE_STATE> get_predictons();
+    // vector<vector<double> > generate_predictions(int horizon = 10)  ;  
 
 private:
     /*! The waypoint map information */
     WP_MAP goMap;
 
     /*! The current state of the car */
-    Vehicle::CAR_STATE goCar;
-
+    Vehicle::GOCAR_STATE goCar;
+    
     /*! The current lane of the car */
     int gnCurLane;
 
