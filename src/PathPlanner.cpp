@@ -63,8 +63,10 @@
         /* If this is the first cycle */
         if (gnPrPathSz == 0)
         {
-            vector<double> goCar_config = {SPEED_LIMIT} ;
-            add_goCar(gnCurLane, goCar.s,goCar.d, goCar_config);                  
+
+            vector<double> goCar_config = {SPEED_LIMIT,MAX_ACCELERATION,MAX_JERK} ;
+            goCarInstance =  Vehicle(State) ;
+            goCarInstance.configure(goCar_config);             
             HandleFirstCycle(hLaneSpline, hVelocitySpline, vvResult);
         }
         else
@@ -75,17 +77,18 @@
         /* Invoke the planner if there is no lane change in progress */
         if (gbLaneChange == false)
         {
+            Tools::traceStream << endl;                                                            
             Tools::traceStream << "Start ObservedVehicles()" << endl;                                    
             ObservedVehicles();       
-            // Tools::traceStream << "Number of cars on the road:" << vehicles.size() << endl;                                    
+            Tools::traceStream << "Number of cars on the road:" << vehicles.size() << endl;                                    
 
             Tools::traceStream << "Start Predictons()" << endl;                                                
-            map<int, Vehicle::VEHICLE_STATE> predictons = get_predictons() ;
-            // Tools::traceStream << "Number of Predictons:" << predictons.size() << endl;                                    
+            map<int, Vehicle::PREDICTED_STATE> predictons = get_predictons() ;
+            Tools::traceStream << "Number of Predictons:" << predictons.size() << endl;                                    
 
-            Tools::traceStream << "Start goCar.update_state(predictons)" << endl;                                                
-            Vehicle goCar = get_goCar();
-            goCar.update_state(predictons);
+            Tools::traceStream << "Start goCar.update_state(predictons)" << endl;          
+            goCarInstance.update_state(predictons);
+            Tools::traceStream << "goCar.state: " << goCarInstance.state << endl;                      
 
             Tools::traceStream << "Start BehaviorPlanner()" << endl;                        
             BehaviourPlanner();    
@@ -890,90 +893,26 @@
     }
 
 
-    void PathPlanner::add_goCar(int lane_num, double s,double d,vector<double> config_data) {
-        
-        map<int, Vehicle>::iterator it = this->vehicles.begin();
-        while(it != this->vehicles.end())
-        {
-            int v_id = it->first;
-            Vehicle v = it->second;
-            if(v.lane == lane_num && v.s == s)
-            {
-                this->vehicles.erase(v_id);
-            }
-            it++;
+    void PathPlanner::ObservedVehicles() {
+
+        Vehicle::VEHICLE_STATE vVehicle ;        
+        for (int i = 0; i < gnSenFusSz; i++) {
+            vehicles[vVehicle.vehicle_id] = vVehicle;        
         }
-        Vehicle goCar = Vehicle(lane_num, s, 0, 0);        
-        
-        goCar.configure(config_data);
-        // ego.state = "KL";
-        goCar.state = "CST";        
-        this->vehicles.insert(std::pair<int,Vehicle>(goCar_key,goCar));        
     }
 
-Vehicle PathPlanner::get_goCar() {
-	
-	return this->vehicles.find(this->goCar_key)->second;
-}    
+    std::map<int, Vehicle::PREDICTED_STATE> PathPlanner::get_predictons(){
 
-/******************************************************************
-*                          Predication Part
-*******************************************************************/
+        for (int i = 0; i < gnSenFusSz; i++) 
+        {
+            vd_t vVehicle = gvvSenFus[i];
+            double s_dot = sqrt(vVehicle[3]*vVehicle[3] + vVehicle[4]*vVehicle[4]);
+            double new_s =  vVehicle[5]+  s_dot * WP_SPLINE_TOT * SIM_TIME_SLICE;        
+            double d = vVehicle[6];
+            Vehicle::PREDICTED_STATE start_state= {new_s, s_dot, 0.0, d, 0.0, 0.0};
+            int v_id = vVehicle[0];
+            predictions[v_id] = start_state;
+        }
 
-// vector<vector<double> > PathPlanner::generate_predictions(int horizon = 10) {
-
-// 	vector<vector<double> > predictions;
-//     for( int i = 0; i < horizon; i++)
-//     {
-//       vector<int> check1 = state_at(i);
-//       vector<int> lane_s = {check1[0], check1[1]};
-//       predictions.push_back(lane_s);
-//   	}
-//     return predictions;
-
-// }
-
-void PathPlanner::ObservedVehicles() {
-    // turn sensor fusion data into Vehicle objects
-    for (int i = 0; i < gnSenFusSz; i++) {
-        int id = gvvSenFus[i][0 ]; 
-        double vx = gvvSenFus[i][3];
-        double vy = gvvSenFus[i][4]; 
-        double d =   gvvSenFus[i][6]; 
-        int lane =  (int)(round(round(d - 2.0) / 4.0));     
-        double s = gvvSenFus[i][5];
-        double velocity_per_timestep = sqrt(pow(vx, 2) + pow(vy, 2)) / 50.0;
-		Vehicle vehicle = Vehicle(lane,s,velocity_per_timestep,0);
-		this->vehicles.insert(std::pair<int,Vehicle>(id,vehicle));
+        return predictions;
     }
-}
-
-// // returns frenet coordinates of predicted position at time t
-// // simplified assumption in line with project constraints
-// // - vehicle stays in lane
-// // - vehicle has constant speed
-// vector<double> PathPlanner::state_at(int t) const {
-//   double new_s = _pos_s + t * _vel_s;
-//   return {new_s, _pos_d};
-// }
-
-
-std::map<int, Vehicle::VEHICLE_STATE> PathPlanner::get_predictons(){
-
-    for (int i = 0; i < gnSenFusSz; i++) 
-    {
-        vd_t vVehicle = gvvSenFus[i];
-        // memcpy(&goCar, &State, sizeof(Vehicle::GOCAR_STATE));
-
-		//predict other traffic on the road into the future
-		// double new_s = s + s_dot * REUSE_PREV_POINTS_NUM * FRAME_UPDATE_TIME;
-        double s_dot = sqrt(vVehicle[3]*vVehicle[3] + vVehicle[4]*vVehicle[4]);
-		double new_s =  vVehicle[5]+  s_dot * WP_SPLINE_TOT * SIM_TIME_SLICE;        
-        double d = vVehicle[6];
-		Vehicle::VEHICLE_STATE start_state= {new_s, s_dot, 0, d, 0, 0};
-        int v_id = vVehicle[0];
-		predictions[v_id] = start_state;
-    }
-
-	return predictions;
-}

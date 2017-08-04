@@ -18,8 +18,9 @@ public:
     } WP_MAP;
 
   	int goCar_key ;
-    map<int, Vehicle> vehicles;
-	map<int, Vehicle::VEHICLE_STATE> predictions;
+    // map<int, Vehicle> vehicles;
+    map<int, Vehicle::VEHICLE_STATE> vehicles;    
+	map<int, Vehicle::PREDICTED_STATE> predictions;
   	int num_lanes = SIM_NUM_LANES;        
 
 
@@ -55,10 +56,8 @@ public:
     vvd_t getWorldPoints(const vd_t vdX, const vd_t vdY) ;
   	// Vehicle get_ego();    
 //added by binliu 170801
-    void add_goCar(int lane_num, double s,double d, vector<double> config_data);      
-    Vehicle get_goCar();
     void ObservedVehicles();
-    std::map<int, Vehicle::VEHICLE_STATE> get_predictons();
+    std::map<int, Vehicle::PREDICTED_STATE> get_predictons();
     // vector<vector<double> > generate_predictions(int horizon = 10)  ;  
 
 private:
@@ -67,6 +66,7 @@ private:
 
     /*! The current state of the car */
     Vehicle::GOCAR_STATE goCar;
+    Vehicle goCarInstance;
     
     /*! The current lane of the car */
     int gnCurLane;

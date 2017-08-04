@@ -1,3 +1,5 @@
+#ifndef HEADER_H
+#define HEADER_H
 #include <fstream>
 #include <math.h>
 #include <uWS/uWS.h>
@@ -40,7 +42,16 @@ using spline = tk::spline;
 #define MIN_LC_VOTES        (20)        /*!< The minimum number of votes needed to make a decision of lane change */
 
 //added by binliu 170802
-#define SPEED_LIMIT        (49.9) 
+#define MAX_ACCELERATION  (10.0)   /*!< The max acceleration  */
+#define MAX_JERK  (50.0)     /*!< The max jerk  */
+#define SPEED_LIMIT        (49.5) 
+#define STARTING      ("CST")
+#define KEEP_LANE      ("KL")
+#define PLCL      ("PLCL")
+#define PLCR      ("PLCR")
+#define LCL      ("LCL")
+#define LCR      ("LCR")
+
 //end add
 
 /* #################### SIMPLIFICATIONS #################### */
@@ -140,3 +151,5 @@ public:
   */
   virtual ~Tools();
 };
+
+#endif

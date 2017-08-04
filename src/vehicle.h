@@ -10,6 +10,7 @@
 #include <string>
 #include <iterator>
 #include <algorithm>
+#include "header.h"
 
 using namespace std;
 
@@ -28,8 +29,20 @@ public:
         double v;
     } GOCAR_STATE;
 
-    /*! The car's current parameters */
+   /*! Other vehicle's current parameters */
     typedef struct sensor_fusion_state
+    {
+        int vehicle_id;
+        double x;
+        double y;  
+        double vx;      
+        double vy;
+        double s;              
+        double d;                
+    } VEHICLE_STATE;    
+
+    /*! Predicted vehicle's current parameters */
+    typedef struct predicted_state
     {
         double s;
         double s_dot;  
@@ -37,7 +50,7 @@ public:
         double d;
         double xxx2;              
         double xxx3;                
-    } VEHICLE_STATE;    
+    } PREDICTED_STATE;     
 
   struct collider{
 
@@ -56,36 +69,28 @@ public:
   double s;
   double d;
 
-  int v;
+  double v;
 
-  int a;
+  double a;
 
-  int target_speed;
+  double target_speed;
 
   int lanes_available;
 
-  int max_acceleration;
+  double max_acceleration;
+  double max_jerk;
 
   int goal_lane;
 
-  int goal_s;
+  double goal_s;
 
   string state;
-
-  //added by binliu 170729
-  double car_x ;
-  double car_y ;
-  double car_s ;
-  double car_d ;
-  double car_yaw ;
-  double car_speed ;
-  //end add
-
   /**
   * Constructor
   */
   
-  Vehicle(int lane, double s, double v, double a);
+  Vehicle(GOCAR_STATE  GoCarState);
+  Vehicle(VEHICLE_STATE  VehicleState);
   Vehicle();
 
   /**
@@ -94,7 +99,7 @@ public:
   virtual ~Vehicle();
 
   // void update_state(map<int, vector <vector<int> > > predictions);
-  void update_state(map<int, VEHICLE_STATE>  predictions) ;
+  void update_state(map<int, PREDICTED_STATE>  predictions) ;
 
   void configure(vector<double> road_data);
 
@@ -109,17 +114,18 @@ public:
 
   collider will_collide_with(Vehicle other, int timesteps);
 
-  void realize_state(map<int, vector < vector<int> > > predictions);
+  void realize_state(map<int, vvd_t> predictions);
 
   void realize_constant_speed();
 
-  int _max_accel_for_lane(map<int,vector<vector<int> > > predictions, int lane, int s);
+  // int _max_accel_for_lane(map<int,vector<vector<int> > > predictions, int lane, int s);
+  double _max_accel_for_lane(map<int,vvd_t > predictions, int lane, double s) ;
 
-  void realize_keep_lane(map<int, vector< vector<int> > > predictions);
+  void realize_keep_lane(map<int, vvd_t> predictions);
 
-  void realize_lane_change(map<int,vector< vector<int> > > predictions, string direction);
+  void realize_lane_change(map<int,vvd_t > predictions, string direction);
 
-  void realize_prep_lane_change(map<int,vector< vector<int> > > predictions, string direction);
+  void realize_prep_lane_change(map<int,vvd_t > predictions, string direction);
   
   void realize_car_starting();
 
@@ -136,19 +142,13 @@ public:
 
   //added by binliu 170729
 private:
-  //double _pos_x;
-  //double _pos_y;
   double _pos_s;
   double _pos_d;
-  //double _vel_x;
-  //double _vel_y;
   double _vel_s;
   double _vel_d;
-  //double _acc_x;
-  //double _acc_y;
   double _acc_s;
   double _acc_d;
-  //end add  
+
 
 };
 
