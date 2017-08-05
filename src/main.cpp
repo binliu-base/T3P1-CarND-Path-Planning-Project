@@ -78,12 +78,8 @@ int main() {
 						/* Create the JSON */
           	json msgJson;
 
-          	// vector<double> next_x_vals;
-          	// vector<double> next_y_vals;
 
           	// TODO: define a path made up of (x,y) points that the car will visit sequentially every .02 seconds
-          	// msgJson["next_x"] = next_x_vals;
-          	// msgJson["next_y"] = next_y_vals;
 						msgJson["next_x"] = vvPathPlan[0];
 						msgJson["next_y"] = vvPathPlan[1];						
 
@@ -93,7 +89,7 @@ int main() {
           	(*ws).send(msg.data(), msg.length(), uWS::OpCode::TEXT);
 
             timestep++;
-            Tools::traceStream << "timestep=" << timestep << endl;            
+            // Tools::traceStream << "timestep=" << timestep << endl;            
           
         }
       } else {

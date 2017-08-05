@@ -17,10 +17,6 @@ public:
         vd_t dy;
     } WP_MAP;
 
-  	int goCar_key ;
-    // map<int, Vehicle> vehicles;
-    map<int, Vehicle::VEHICLE_STATE> vehicles;    
-	map<int, Vehicle::PREDICTED_STATE> predictions;
   	int num_lanes = SIM_NUM_LANES;        
 
 
@@ -54,19 +50,15 @@ public:
     vd_t getWorldXY(const double dX, const double dY);
     vvd_t getLocalPoints(const vd_t vdX, const vd_t vdY) ;
     vvd_t getWorldPoints(const vd_t vdX, const vd_t vdY) ;
-  	// Vehicle get_ego();    
-//added by binliu 170801
-    void ObservedVehicles();
-    std::map<int, Vehicle::PREDICTED_STATE> get_predictons();
-    // vector<vector<double> > generate_predictions(int horizon = 10)  ;  
+
 
 private:
     /*! The waypoint map information */
     WP_MAP goMap;
 
     /*! The current state of the car */
-    Vehicle::GOCAR_STATE goCar;
-    Vehicle goCarInstance;
+    // Vehicle::GOCAR_STATE goCar;
+    Vehicle goCar;
     
     /*! The current lane of the car */
     int gnCurLane;
@@ -89,8 +81,8 @@ private:
     /*! Stores the path history */
     vvd_t gvvPathHist;
 
-    /*! Tracks if we are in a lane change */
-    bool gbLaneChange = false;
+    // /*! Tracks if we are in a lane change */
+    // bool gbLaneChange = false;
 
     /*! Size of the waypoints */
     int gnMapSz;

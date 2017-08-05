@@ -1,5 +1,6 @@
 #include "PathPlanner.h"
 
+
     /*!
     * @brief: Constructor to the PathPlanner class
     *
@@ -15,8 +16,7 @@
         /* Save the size of the waypoints */
         gnMapSz = goMap.x.size();   
 
-        goCar_key = -1;        
-        // Tools::traceStream << "gnMapSz=" << gnMapSz << " goCar_key=" << this->goCar_key << endl;                    
+        goCar = Vehicle(); 
     }
 
     /*!
@@ -38,7 +38,7 @@
         vvd_t vvResult;
 
         /* Save the current values */
-        memcpy(&goCar, &State, sizeof(Vehicle::GOCAR_STATE));
+        memcpy(&goCar.goCarState, &State, sizeof(Vehicle::GOCAR_STATE));                                
         gvvPrPath = PrevPath;
         gvvSenFus = SensorFusion;
 
@@ -50,7 +50,7 @@
         gnSenFusSz = gvvSenFus.size();
 
         /* Get the current lane */
-        gnCurLane = (int)(round(round(goCar.d - 2.0) / 4.0));
+        gnCurLane = (int)(round(round(State.d - 2.0) / 4.0));
 
         /* Setup a lane spline */
         spline hLaneSpline;
@@ -58,41 +58,27 @@
 
         /* Setup a velocity spline */
         spline hVelocitySpline;
-        CreateVelocitySplineFirstCycle(hVelocitySpline);        
+        CreateVelocitySplineFirstCycle(hVelocitySpline);     
 
-        /* If this is the first cycle */
+        Tools::traceStream << "timestep:" <<gnTimeStep << " " <<"previous path size: " << gnPrPathSz << endl;                                               
+
+        /* If this is car starting ---  no paths */
         if (gnPrPathSz == 0)
         {
-
-            vector<double> goCar_config = {SPEED_LIMIT,MAX_ACCELERATION,MAX_JERK} ;
-            goCarInstance =  Vehicle(State) ;
-            goCarInstance.configure(goCar_config);             
             HandleFirstCycle(hLaneSpline, hVelocitySpline, vvResult);
         }
+        /* If this is car running --- keep lane */        
         else
         {
             HandleGenericCycle(hLaneSpline, vvResult);
         }
 
         /* Invoke the planner if there is no lane change in progress */
-        if (gbLaneChange == false)
+        if (goCar.gbLaneChange == false)
         {
-            Tools::traceStream << endl;                                                            
-            Tools::traceStream << "Start ObservedVehicles()" << endl;                                    
-            ObservedVehicles();       
-            Tools::traceStream << "Number of cars on the road:" << vehicles.size() << endl;                                    
-
-            Tools::traceStream << "Start Predictons()" << endl;                                                
-            map<int, Vehicle::PREDICTED_STATE> predictons = get_predictons() ;
-            Tools::traceStream << "Number of Predictons:" << predictons.size() << endl;                                    
-
-            Tools::traceStream << "Start goCar.update_state(predictons)" << endl;          
-            goCarInstance.update_state(predictons);
-            Tools::traceStream << "goCar.state: " << goCarInstance.state << endl;                      
-
             Tools::traceStream << "Start BehaviorPlanner()" << endl;                        
             BehaviourPlanner();    
-            Tools::traceStream << "End BehaviorPlanner" << endl;            
+
         }
 
         /* Increment the timestep */
@@ -115,7 +101,7 @@
         /* wrong way! */
         if (vvLocalWP[0][0] > 0.0) 
         {
-            goCar.yaw_d += 180.0;
+            goCar.goCarState.yaw_d += 180.0;
             vvLocalWP = getLocalWPSeg();
         }
         
@@ -219,10 +205,10 @@
         gvvPathHist[1].erase(gvvPathHist[1].begin(), gvvPathHist[1].begin() + (NUM_POINTS - gnPrPathSz));
 
         /* Check if we are done changing lanes */
-        if ((gbLaneChange == true) && (goCar.d >= (gnNextD - FLOAT_EPS)) && (goCar.d <= (gnNextD + FLOAT_EPS)))
+        if ((goCar.gbLaneChange == true) && (goCar.goCarState.d >= (gnNextD - FLOAT_EPS)) && (goCar.goCarState.d <= (gnNextD + FLOAT_EPS)))
         {
             gnLaneChangeVotes = 0;
-            gbLaneChange = false;
+            goCar.gbLaneChange = false;
         }
 
         /*** PATH ***/
@@ -335,7 +321,7 @@
             gvvSenFus[i].pb((distance(0.0, 0.0, vVehicle[3], vVehicle[4]) * SIM_TIME_SLICE));
 
             /* Displacement of other car from ours */
-            gvvSenFus[i].pb(vVehicle[5] - goCar.s);
+            gvvSenFus[i].pb(vVehicle[5] - goCar.goCarState.s);
 
             /* Add the cars into the corresponding lanes */
             for (int j = 0; j < SIM_NUM_LANES; j++)
@@ -366,58 +352,6 @@
         LaneChange(vvvLanes, vvCloseCars, vLaneRanks);
     }
 
-    // void PathPlanner::BehaviourPlanner(void)
-    // {
-    //     vvvd_t vvvLanes(SIM_NUM_LANES);
-
-    //     for (int i = 0; i < gnSenFusSz; i++) 
-    //     {
-    //         vd_t vVehicle = gvvSenFus[i];
-
-    //         /* Add the computed values into the sensor fusion structure */
-    //         /* Dist increments (velocity) of the car */
-    //         gvvSenFus[i].pb((distance(0.0, 0.0, vVehicle[3], vVehicle[4]) * SIM_TIME_SLICE));
-
-    //         /* Displacement of other car from ours */
-    //         gvvSenFus[i].pb(vVehicle[5] - goCar.s);
-
-	// 		Vehicle vehicle = Vehicle();            
-    //         vehicle.s = vVehicle[5];            
-    //         vehicle.d = vVehicle[6]; 
-    //         // vehicle.vehicle_id  = vVehicle[0]; 
-
-    //         /* Add the cars into the corresponding lanes */
-    //         for (int j = 0; j < SIM_NUM_LANES; j++)
-    //         {
-    //             if ((vVehicle[6] >= ((j * SIM_LANE_WD) - LANE_BUFFER)) && (vVehicle[6] <= (((j + 1) * SIM_LANE_WD) + LANE_BUFFER)))
-    //             {
-    //                 vvvLanes[j].pb(gvvSenFus[i]);
-    //                 vehicle.lane = j;
-    //             }
-    //         }
-
-    //         this->vehicles.insert(std::pair<int,Vehicle>(vVehicle[0],vehicle)); 
-    //     }
-
-    //     /* Sort the lanes */
-    //     for (int i = 0; i < SIM_NUM_LANES; i++)
-    //     {
-    //         /* Sort based on the distance */
-    //         sort(vvvLanes[i].begin(), vvvLanes[i].end(),[](const std::vector<double>& a, const std::vector<double>& b) 
-    //         {
-    //             return a[8] < b[8];
-    //         });
-    //     }
-
-    //     /* Rank the lanes */
-    //     vi_t vLaneRanks;
-    //     vvi_t vvCloseCars;
-    //     RankLanes(vvvLanes, vvCloseCars, vLaneRanks);
-
-    //     /* Change lanes if feasible */
-    //     LaneChange(vvvLanes, vvCloseCars, vLaneRanks);
- 
-    // }    
 
     /*! Checks which of the lanes (including the current one)
      * is most feasible in the order of their rankings, and if
@@ -452,7 +386,7 @@
 
             /* If we are travelling too fast, then a multiple lane change might
             cause too much jerk */
-            if ((goCar.v >= 40.0) && (abs(nChanges) > 1))
+            if ((goCar.goCarState.v >= 40.0) && (abs(nChanges) > 1))
             {
                 bFeasible = false;
             }
@@ -503,7 +437,7 @@
 
                 if (gnLaneChangeVotes > MIN_LC_VOTES)
                 {
-                    gbLaneChange = true;
+                    goCar.gbLaneChange = true;
                     nDestLane = nLane;
                     gnLaneChangeVotes = 0;
                 }                
@@ -520,6 +454,7 @@
         {
             /* Full speed ahead, since no car ahead of us */
             gnNextS = MAX_DIST_INC;
+            Tools::traceStream << "line 460, no car ahead of us,  MAX Speed: " << gnNextS << endl;                                                                           
         }
         else
         {
@@ -528,15 +463,18 @@
             if (nDist > (MIN_VEH_GAP * 4.0))
             {
                 gnNextS = MAX_DIST_INC; 
+                Tools::traceStream << "line 468 MAX Speed: " << gnNextS << endl;                                                               
             }
             else if (nDist < (MIN_VEH_GAP * 1.0))
             {
                 /* Emergency breaks */
                 gnNextS = 0;
+                Tools::traceStream << "line 474 Emergency breaks: " << gnNextS << endl;
             }
             else
             {
-                gnNextS = ((gnNextS * 0.90) < nVel) ? nVel : (gnNextS * 0.90);
+                gnNextS = ((gnNextS * VELOCITY_COEF) < nVel) ? nVel : (gnNextS * VELOCITY_COEF);
+                Tools::traceStream << "line 479 Limit Speed (Max Speed * 0.8 ):  " << gnNextS << endl;                                                                                               
             }
         }
     }
@@ -659,7 +597,7 @@
         /* Loop through all the waypoints and find the closest one */
         for(int i = 0; i < gnMapSz; i++) 
         {
-            const double dDist = distance(goCar.x, goCar.y, goMap.x[i], goMap.y[i]);
+            const double dDist = distance(goCar.goCarState.x, goCar.goCarState.y, goMap.x[i], goMap.y[i]);
             if(dDist < dLen) 
             {
                 dLen = dDist;
@@ -680,11 +618,11 @@
         int nWP = ClosestWaypoint();
 
         /* Compute the heading of the car relative to the closest waypoint */
-        const double dHeading = atan2((goMap.y[nWP] - goCar.y), (goMap.x[nWP] - goCar.x));
+        const double dHeading = atan2((goMap.y[nWP] - goCar.goCarState.y), (goMap.x[nWP] - goCar.goCarState.x));
 
         /* If the car is not heading towards the next waypoint (i.e: it's behind us), then choose
         the next one instead */
-        const double dAngleDiff = abs(goCar.yaw_r - dHeading);
+        const double dAngleDiff = abs(goCar.goCarState.yaw_r - dHeading);
         if(dAngleDiff > (M_PI / 4.0))
         {
             nWP++;
@@ -721,8 +659,8 @@
         /* Compute the projection n */
         const double dNX = goMap.x[nNextWP] - goMap.x[nPrevWP];
         const double dNY = goMap.y[nNextWP] - goMap.y[nPrevWP];
-        const double dXX = goCar.x - goMap.x[nPrevWP];
-        const double dXY = goCar.y - goMap.y[nPrevWP];
+        const double dXX = goCar.goCarState.x - goMap.x[nPrevWP];
+        const double dXY = goCar.goCarState.y - goMap.y[nPrevWP];
 
         /* find the projection of x onto n */
         const double dProjNorm = (((dXX * dNX) + (dXY * dNY)) / ((dNX * dNX) + (dNY * dNY)));
@@ -768,11 +706,11 @@
     {
         vd_t vResults;
 
-        const float dDeltaX = (dX - goCar.x);
-        const float dDeltaY = (dY - goCar.y);
+        const float dDeltaX = (dX - goCar.goCarState.x);
+        const float dDeltaY = (dY - goCar.goCarState.y);
 
-        vResults.push_back((dDeltaX  * cos(goCar.yaw_r)) + (dDeltaY * sin(goCar.yaw_r)));
-        vResults.push_back((-dDeltaX * sin(goCar.yaw_r)) + (dDeltaY * cos(goCar.yaw_r)));
+        vResults.push_back((dDeltaX  * cos(goCar.goCarState.yaw_r)) + (dDeltaY * sin(goCar.goCarState.yaw_r)));
+        vResults.push_back((-dDeltaX * sin(goCar.goCarState.yaw_r)) + (dDeltaY * cos(goCar.goCarState.yaw_r)));
 
         return vResults;
     }
@@ -788,8 +726,8 @@
     {
         vd_t results;
 
-        results.push_back((dX * cos(goCar.yaw_r)) - (dY * sin(goCar.yaw_r)) + goCar.x);
-        results.push_back((dX * sin(goCar.yaw_r)) + (dY * cos(goCar.yaw_r)) + goCar.y);
+        results.push_back((dX * cos(goCar.goCarState.yaw_r)) - (dY * sin(goCar.goCarState.yaw_r)) + goCar.goCarState.x);
+        results.push_back((dX * sin(goCar.goCarState.yaw_r)) + (dY * cos(goCar.goCarState.yaw_r)) + goCar.goCarState.y);
 
         return results;
     }
@@ -893,26 +831,27 @@
     }
 
 
-    void PathPlanner::ObservedVehicles() {
+    // void PathPlanner::ObservedVehicles() {
 
-        Vehicle::VEHICLE_STATE vVehicle ;        
-        for (int i = 0; i < gnSenFusSz; i++) {
-            vehicles[vVehicle.vehicle_id] = vVehicle;        
-        }
-    }
+    //     PathPlanner::VEHICLE_STATE vVehicle ;        
+    //     for (int i = 0; i < gnSenFusSz; i++) {
+    //         vd_t vVehicle = gvvSenFus[i];            
+    //         vehicles[vVehicle[0]] = vVehicle;        
+    //     }
+    // }
 
-    std::map<int, Vehicle::PREDICTED_STATE> PathPlanner::get_predictons(){
+    // std::map<int, PathPlanner::PREDICTED_STATE> PathPlanner::get_predictons(){
 
-        for (int i = 0; i < gnSenFusSz; i++) 
-        {
-            vd_t vVehicle = gvvSenFus[i];
-            double s_dot = sqrt(vVehicle[3]*vVehicle[3] + vVehicle[4]*vVehicle[4]);
-            double new_s =  vVehicle[5]+  s_dot * WP_SPLINE_TOT * SIM_TIME_SLICE;        
-            double d = vVehicle[6];
-            Vehicle::PREDICTED_STATE start_state= {new_s, s_dot, 0.0, d, 0.0, 0.0};
-            int v_id = vVehicle[0];
-            predictions[v_id] = start_state;
-        }
+    //     for (int i = 0; i < gnSenFusSz; i++) 
+    //     {
+    //         vd_t vVehicle = gvvSenFus[i];
+    //         double s_dot = sqrt(vVehicle[3]*vVehicle[3] + vVehicle[4]*vVehicle[4]);
+    //         double new_s =  vVehicle[5]+  s_dot * WP_SPLINE_TOT * SIM_TIME_SLICE;        
+    //         double d = vVehicle[6];
+    //         PathPlanner::PREDICTED_STATE start_state= {new_s, s_dot, 0.0, d, 0.0, 0.0};
+    //         int v_id = vVehicle[0];
+    //         predictions[v_id] = start_state;
+    //     }
 
-        return predictions;
-    }
+    //     return predictions;
+    // }
