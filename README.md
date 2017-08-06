@@ -17,7 +17,7 @@ Desigh Requirements are as follows:
 * The car is able to change lanes.
 
 # Final Result
-[Video](https://youtu.be/xWD0j_8Z6gg) Using this path planner, our car successfully drives around the track for 4.32 Miles was 6 minutes 19 seconds. 
+[Video](https://youtu.be/xWD0j_8Z6gg) Using this path planner, our car successfully drives around the track for 4.32 Miles with 6 minutes 19 seconds. 
 
 ![pathplanner5](https://user-images.githubusercontent.com/24623272/29002135-5933af78-7ace-11e7-8e9a-8fee53692b5f.png)
 
@@ -27,7 +27,7 @@ Desigh Requirements are as follows:
 Behaviour prediction is not implemented in the Path Planner, as an extensive behaviour prediction is not necessary for a simple highway driving scenario. But this is necessary in a more complex environment，eg. urban driving scenes.
 
 #### 2. Behaviour Planning
-Behaviour prediction, as can be seen in src/PathPlanner.cpp lines 311-354 is a simple finite state machine to decide when to change lanes. Which use the lane score algorithm from Mohan Karthik. Which mainly do the following two things.
+Behaviour prediction, as can be seen in src/PathPlanner.cpp lines 311-354 is a simple finite state machine to decide when to change lanes. Which use the lane score algorithm from Mohan Karthik. The algorithm mainly do the following two things.
 
 1. Estimating a score for each lane, as can be seen in src/vehicle.cpp lines 106-170
 , to determine the best lane for us to be in (efficiency)
@@ -36,16 +36,16 @@ Behaviour prediction, as can be seen in src/PathPlanner.cpp lines 311-354 is a s
 
 ##### Ranking Lanes
 The lane score algorithm rank lanes are using the following 3 factors
-1. The lesser the number of lanes we need to change, the better. Because the lesser we change lanes, the more comfortable the drive is for the passengers (takes care of comfort)
+1. The lesser the number of lanes we need to change, the better. Because the lesser we change lanes, the more comfortable the drive is for the passengers (takes care of comfort).
 
-2. The distance of the car ahead of us in that lane. The more the distance, the better the score
+2. The distance of the car ahead of us in that lane. The more the distance, the better the score.
 
 3. The velocity of the car ahead of us in that lane. The greater the velocity, the faster we can travel in that lane, before being forced to change lane again.
 
 #### 3. Trajectory Generation
 Trajectory Generation, as can be seen in src/PathPLanner.cpp lines 194-306 where its path planning decision are put into practice. 
 
-1. Udaity simulator gives us the previous path after removing all consumed points in the last time cycle.
+1. The Udaity simulator gives us the previous path after removing all consumed points in the last time cycle.
 
 2. Inspired from John Chen, converting all coordinates from global coordinate system to local car’s coordinate system to make things easier.
 
@@ -57,6 +57,15 @@ Trajectory Generation, as can be seen in src/PathPLanner.cpp lines 194-306 where
 to the destination velocity (s/time). This ensures that we can follow our ideal trajectory without violating jerk / speed constraints.
 
 6. Convert these points back to the world coordinates and feed them back to the simulator.
+
+### Future Work
+This is a simplified path planner solution. There is still a lot of things to improve it.
+
+1. Add in behaviour prediction using multiple-model estimators that will allow the system to react much better & faster to the fine-grain dynamic changes.
+
+2. Design and implement new cost functions for vehicle behavior and lane states. 
+
+3. Polished these cost functions and make them cooperate efficiently.
 
 
 ### Simulator. You can download the Term3 Simulator BETA which contains the Path Planning Project from the [releases tab](https://github.com/udacity/self-driving-car-sim/releases).
