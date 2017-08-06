@@ -28,7 +28,7 @@ using spline = tk::spline;
 #define FLOAT_INF           (numeric_limits<double>::infinity())
 
 /** ALGORITHM **/
-#define VELOCITY_COEF       (0.8) 
+#define VELOCITY_COEF       (0.7) 
 #define NUM_POINTS          (40)        /*!< Number of points predicted in each cycle */
 #define MAX_DIST_INC        (0.4425)    /*!< The maximum dist inc per time step, corresponds to max velocity */
 #define WP_SPLINE_PREV      (6)         /*!< Number of waypoints to look behind when constructing a spline */
@@ -40,10 +40,14 @@ using spline = tk::spline;
 #define BEH_VEL_SCR         (3.0)       /*!< The distance scoring weight for the behaviour planner */
 #define MIN_VEH_GAP         (10.0)      /*!< The minimum vehicle gap to be maintained at all costs */
 #define MAX_VEH_GAP         (200.0)     /*!< The maximum observable vehicle gap */
-// #define MIN_LC_VOTES        (20)        /*!< The minimum number of votes needed to make a decision of lane change */
 #define MIN_LC_VOTES        (20)        /*!< The minimum number of votes needed to make a decision of lane change */
 
 
+//added by binliu 170806
+#define KL      ("KL")
+#define LCL      ("LCL")
+#define LCR      ("LCR")
+//end add
 
 /* #################### SIMPLIFICATIONS #################### */
 typedef vector<int> vi_t;

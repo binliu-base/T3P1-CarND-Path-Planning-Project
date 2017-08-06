@@ -29,32 +29,17 @@ public:
         double v;
     } GOCAR_STATE;
 
-//    /*! Other vehicle's current parameters */
-//     typedef struct sensor_fusion_state
-//     {
-//         int vehicle_id;
-//         double x;
-//         double y;  
-//         double vx;      
-//         double vy;
-//         double s;              
-//         double d;                
-//     } VEHICLE_STATE;    
-
-//     /*! Predicted vehicle's current parameters */
-//     typedef struct predicted_state
-//     {
-//         double s;
-//         double s_dot;  
-//         double xxx1;      
-//         double d;
-//         double xxx2;              
-//         double xxx3;                
-//     } PREDICTED_STATE;     
-
   int lane;
+  string state = KL;
   GOCAR_STATE goCarState;
-  bool gbLaneChange;
+  bool gbLaneChange = false;
+  /*! The value of distance increment per time step */
+  double gnNextS = MAX_DIST_INC;
+  /*! The next d value */
+  double gnNextD = 6.0;  
+
+  /*! Votes for lane change */
+  int gnLaneChangeVotes = 0;  
 
   /**
   * Constructor
@@ -69,8 +54,7 @@ public:
   */
   virtual ~Vehicle();
 
-//   // void update_state(map<int, vector <vector<int> > > predictions);
-//   void update_state(map<int, PREDICTED_STATE>  predictions) ;
+  void update_state(const vvvd_t &vvvLanes, vvi_t &vvCars, vi_t &vLaneRanks);
 
 //   void configure(vector<double> road_data);
 
@@ -100,14 +84,12 @@ public:
 
 //   vector<vector<double> > generate_predictions(int horizon);
 
-//   vector<string> get_successor_states();
+  vector<string> get_successor_states();
+  void FindClosestCars(const vvvd_t &vvvLanes, vvi_t &vvResult);
+  // void RankLanes(const vvvd_t &vvvLanes, vvi_t &vvCars, vi_t &vResult);
+  void RankLanes(const vvvd_t &vvvLanes, vvi_t &vvCars, vi_t &vResult, map<int,double> &vScoresMap);  
+  void LaneChange(const vvvd_t &vvvLanes, const vvi_t &vvCars, const vi_t &vRanks);
 
-//   //added by binliu 170729
-//   vector<double> get_s() const;
-//   vector<double> get_d() const;  
-//   void set_frenet_pos(double pos_s, double pos_d); 
-//   void set_frenet_motion(double vel_s, double acc_s, double vel_d, double acc_d);   
-//   //end add
 
 private:
 

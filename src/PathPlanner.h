@@ -39,9 +39,9 @@ public:
     void HandleFirstCycle(spline &hLaneSpline,spline &hVelocitySpline, vvd_t &vvResult);
     void HandleGenericCycle(spline &hLaneSpline, vvd_t &vvResult);
     void BehaviourPlanner(void);
-    void LaneChange(const vvvd_t &vvvLanes, const vvi_t &vvCars, const vi_t &vRanks);
-    void RankLanes(const vvvd_t &vvvLanes, vvi_t &vvCars, vi_t &vResult);
-    void FindClosestCars(const vvvd_t &vvvLanes, vvi_t &vvResult);
+    // void LaneChange(const vvvd_t &vvvLanes, const vvi_t &vvCars, const vi_t &vRanks);
+    // void RankLanes(const vvvd_t &vvvLanes, vvi_t &vvCars, vi_t &vResult);
+    // void FindClosestCars(const vvvd_t &vvvLanes, vvi_t &vvResult);
     int ClosestWaypoint(void);
     int NextWaypoint(void) ;
     vd_t getFrenet(void);
@@ -60,8 +60,8 @@ private:
     // Vehicle::GOCAR_STATE goCar;
     Vehicle goCar;
     
-    /*! The current lane of the car */
-    int gnCurLane;
+    // /*! The current lane of the car */
+    // int gnCurLane;
 
     /*! The previous path */
     vvd_t gvvPrPath;
@@ -87,17 +87,14 @@ private:
     /*! Size of the waypoints */
     int gnMapSz;
 
-    /*! The next d value */
-    double gnNextD = 6.0;
+    // /*! The next d value */
+    // double gnNextD = 6.0;
 
-    /*! The value of distance increment per time step */
-    double gnNextS = MAX_DIST_INC;
+    // /*! The value of distance increment per time step */
+    // double gnNextS = MAX_DIST_INC;
 
     /*! The current time step */
     long long gnTimeStep = 0;
-
-    /*! Votes for lane change */
-    int gnLaneChangeVotes = 0;
     
 
 };
