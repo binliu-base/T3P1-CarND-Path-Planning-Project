@@ -10,56 +10,43 @@
 #include <string>
 #include <iterator>
 #include <algorithm>
+#include "header.h"
 
 using namespace std;
 
 class Vehicle {
 public:
 
-  struct collider{
-
-    bool collision ; // is there a collision?
-    int  time; // time collision happens
-
-  };
-
-  int L = 1;
-
-  int preferred_buffer = 6; // impacts "keep lane" behavior.
+    /*! The car's current parameters */
+    typedef struct car_state
+    {
+        double x;
+        double y;
+        double s;
+        double d;
+        double yaw_d;
+        double yaw_r;
+        double v;
+    } GOCAR_STATE;
 
   int lane;
+  string state = KL;
+  GOCAR_STATE goCarState;
+  bool gbLaneChange = false;
+  /*! The value of distance increment per time step */
+  double gnNextS = MAX_DIST_INC;
+  /*! The next d value */
+  double gnNextD = 6.0;  
 
-  int s;
-
-  int v;
-
-  int a;
-
-  int target_speed;
-
-  int lanes_available;
-
-  int max_acceleration;
-
-  int goal_lane;
-
-  int goal_s;
-
-  string state;
-
-  //added by binliu 170729
-  double car_x ;
-  double car_y ;
-  double car_s ;
-  double car_d ;
-  double car_yaw ;
-  double car_speed ;
-  //end add
+  /*! Votes for lane change */
+  int gnLaneChangeVotes = 0;  
 
   /**
   * Constructor
   */
-  Vehicle(int lane, int s, int v, int a);
+  
+  Vehicle(GOCAR_STATE  State);
+//   Vehicle(VEHICLE_STATE State);
   Vehicle();
 
   /**
@@ -67,59 +54,45 @@ public:
   */
   virtual ~Vehicle();
 
-  void update_state(map<int, vector <vector<int> > > predictions);
+  void update_state(const vvvd_t &vvvLanes, vvi_t &vvCars, vi_t &vLaneRanks);
 
-  void configure(vector<int> road_data);
+//   void configure(vector<double> road_data);
 
-  string display();
+//   void increment(int dt);
 
-  void increment(int dt);
+//   // vector<int> state_at(int t);
+//   vector<double> state_at(double t) const;
 
-  // vector<int> state_at(int t);
-  vector<double> state_at(double t) const;
+//   bool collides_with(Vehicle other, int at_time);
 
-  bool collides_with(Vehicle other, int at_time);
+//   collider will_collide_with(Vehicle other, int timesteps);
 
-  collider will_collide_with(Vehicle other, int timesteps);
+//   void realize_state(map<int, vvd_t> predictions);
 
-  void realize_state(map<int, vector < vector<int> > > predictions);
+//   void realize_constant_speed();
 
-  void realize_constant_speed();
+//   // int _max_accel_for_lane(map<int,vector<vector<int> > > predictions, int lane, int s);
+//   double _max_accel_for_lane(map<int,vvd_t > predictions, int lane, double s) ;
 
-  int _max_accel_for_lane(map<int,vector<vector<int> > > predictions, int lane, int s);
+//   void realize_keep_lane(map<int, vvd_t> predictions);
 
-  void realize_keep_lane(map<int, vector< vector<int> > > predictions);
+//   void realize_lane_change(map<int,vvd_t > predictions, string direction);
 
-  void realize_lane_change(map<int,vector< vector<int> > > predictions, string direction);
+//   void realize_prep_lane_change(map<int,vvd_t > predictions, string direction);
+  
+//   void realize_car_starting();
 
-  void realize_prep_lane_change(map<int,vector< vector<int> > > predictions, string direction);
-
-  // vector<vector<int> > generate_predictions(int horizon);
+//   vector<vector<double> > generate_predictions(int horizon);
 
   vector<string> get_successor_states();
+  void FindClosestCars(const vvvd_t &vvvLanes, vvi_t &vvResult);
+  // void RankLanes(const vvvd_t &vvvLanes, vvi_t &vvCars, vi_t &vResult);
+  void RankLanes(const vvvd_t &vvvLanes, vvi_t &vvCars, vi_t &vResult, map<int,double> &vScoresMap);  
+  void LaneChange(const vvvd_t &vvvLanes, const vvi_t &vvCars, const vi_t &vRanks);
 
-  //added by binliu 170729
-  vector<double> get_s() const;
-  vector<double> get_d() const;  
-  void set_frenet_pos(double pos_s, double pos_d); 
-  void set_frenet_motion(double vel_s, double acc_s, double vel_d, double acc_d);   
-  //end add
 
-  //added by binliu 170729
 private:
-  //double _pos_x;
-  //double _pos_y;
-  double _pos_s;
-  double _pos_d;
-  //double _vel_x;
-  //double _vel_y;
-  double _vel_s;
-  double _vel_d;
-  //double _acc_x;
-  //double _acc_y;
-  double _acc_s;
-  double _acc_d;
-  //end add  
+
 
 };
 
