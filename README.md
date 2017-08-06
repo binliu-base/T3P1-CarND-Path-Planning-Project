@@ -1,6 +1,53 @@
 # CarND-Path-Planning-Project
 Self-Driving Car Engineer Nanodegree Program
-   
+
+---
+
+# Project Overview
+
+Goal of this project is to implement Path Planning to plan and generate safe and smooth trajectories for a simulated self-driving car, driving along a 3 lane highway with traffic that is driving +-10 MPH of the 50 MPH speed limit. The simulator provides a feed of values containing the car's localization, sensor fusion data of around vehicles on right hand side of the road and 
+and a sparse map list of waypoints around the highway. These coordinates are provided in a global coordinate system. 
+
+Desigh Requirements are as follows: 
+
+* The car is able to drive at least 4.32 miles without incident.
+* The car drives according to the speed limit.
+* Max Acceleration and Jerk are not Exceeded.
+* Car does not have collisions.
+* The car stays in its lane, except for the time between changing lanes.
+* The car is able to change lanes.
+
+# Final Result
+[Here](https://youtu.be/xWD0j_8Z6gg)  
+Using this path planner, our car successfully drives around the track in the simulator.
+![pathplanner5](https://user-images.githubusercontent.com/24623272/29002135-5933af78-7ace-11e7-8e9a-8fee53692b5f.png)
+
+### The Path Planner
+
+#### 1. Prediction
+Behaviour prediction is not implemented in the Path Planner, as an extensive behaviour prediction is not necessary for a simple highway driving scenario. But this is necessary in a more complex environment，eg. urban driving scenes.
+
+#### 2. Behaviour Planning
+Behaviour prediction, as can be seen in src/PathPlanner.cpp lines 311-354 is a simple finite state machine to decide when to change lanes. Which use a lane score 
+algorithm from Mohan Karthik. The lane score algorithm will do the following  things.
+
+1. Estimating a score for each lane, as can be seen in src/vehicle.cpp lines 106-170
+, to determine the best lane for us to be in (efficiency)
+
+2. Evaluating the feasibility of moving to that lane in the immediate future (safety & comfort),as can be seen in src/vehicle.cpp lines 180-300
+
+##### Ranking Lanes
+The lane score algorithm rank lanes are using the following 3 factors
+1. The lesser the number of lanes we need to change, the better. Because the lesser we change lanes, the more comfortable the drive is for the passengers (takes care of comfort)
+
+2. The distance of the car ahead of us in that lane. The more the distance, the better the score
+
+3. The velocity of the car ahead of us in that lane. The greater the velocity, the faster we can travel in that lane, before being forced to change lane again.
+
+#### 2. Trajectory Generation
+
+
+
 ### Simulator. You can download the Term3 Simulator BETA which contains the Path Planning Project from the [releases tab](https://github.com/udacity/self-driving-car-sim/releases).
 
 In this project your goal is to safely navigate around a virtual highway with other traffic that is driving +-10 MPH of the 50 MPH speed limit. You will be provided the car's localization and sensor fusion data, there is also a sparse map list of waypoints around the highway. The car should try to go as close as possible to the 50 MPH speed limit, which means passing slower traffic when possible, note that other cars will try to change lanes too. The car should avoid hitting other cars at all cost as well as driving inside of the marked road lanes at all times, unless going from one lane to another. The car should be able to make one complete loop around the 6946m highway. Since the car is trying to go 50 MPH, it should take a little over 5 minutes to complete 1 loop. Also the car should not experience total acceleration over 10 m/s^2 and jerk that is greater than 50 m/s^3.
