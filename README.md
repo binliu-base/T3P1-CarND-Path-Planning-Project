@@ -5,8 +5,7 @@ Self-Driving Car Engineer Nanodegree Program
 
 # Project Overview
 
-Goal of this project is to implement Path Planning to plan and generate safe and smooth trajectories for a simulated self-driving car, driving along a 3 lane highway with traffic that is driving +-10 MPH of the 50 MPH speed limit. The simulator provides a feed of values containing the car's localization, sensor fusion data of around vehicles on right hand side of the road and 
-and a sparse map list of waypoints around the highway. These coordinates are provided in a global coordinate system. 
+Goal of this project is to implement Path Planning to plan and generate safe and smooth trajectories for a simulated self-driving car, driving along a 3 lane highway with traffic that is driving +-10 MPH of the 50 MPH speed limit. The simulator provides a feed of values containing the car's localization, sensor fusion data of around vehicles on right hand side of the road and a sparse map list of waypoints around the highway. 
 
 Desigh Requirements are as follows: 
 
@@ -18,8 +17,8 @@ Desigh Requirements are as follows:
 * The car is able to change lanes.
 
 # Final Result
-[Here](https://youtu.be/xWD0j_8Z6gg)  
-Using this path planner, our car successfully drives around the track in the simulator.
+[Video](https://youtu.be/xWD0j_8Z6gg) Using this path planner, our car successfully drives around the track for 4.32 Miles was 6 minutes 19 seconds. 
+
 ![pathplanner5](https://user-images.githubusercontent.com/24623272/29002135-5933af78-7ace-11e7-8e9a-8fee53692b5f.png)
 
 ### The Path Planner
@@ -28,8 +27,7 @@ Using this path planner, our car successfully drives around the track in the sim
 Behaviour prediction is not implemented in the Path Planner, as an extensive behaviour prediction is not necessary for a simple highway driving scenario. But this is necessary in a more complex environment，eg. urban driving scenes.
 
 #### 2. Behaviour Planning
-Behaviour prediction, as can be seen in src/PathPlanner.cpp lines 311-354 is a simple finite state machine to decide when to change lanes. Which use a lane score 
-algorithm from Mohan Karthik. The lane score algorithm will do the following  things.
+Behaviour prediction, as can be seen in src/PathPlanner.cpp lines 311-354 is a simple finite state machine to decide when to change lanes. Which use the lane score algorithm from Mohan Karthik. Which mainly do the following two things.
 
 1. Estimating a score for each lane, as can be seen in src/vehicle.cpp lines 106-170
 , to determine the best lane for us to be in (efficiency)
@@ -44,8 +42,21 @@ The lane score algorithm rank lanes are using the following 3 factors
 
 3. The velocity of the car ahead of us in that lane. The greater the velocity, the faster we can travel in that lane, before being forced to change lane again.
 
-#### 2. Trajectory Generation
+#### 3. Trajectory Generation
+Trajectory Generation, as can be seen in src/PathPLanner.cpp lines 194-306 where its path planning decision are put into practice. 
 
+1. Udaity simulator gives us the previous path after removing all consumed points in the last time cycle.
+
+2. Inspired from John Chen, converting all coordinates from global coordinate system to local car’s coordinate system to make things easier.
+
+3. Create a spline of the nearest surrounding waypoints (saying total 25 waypoints, 6 before , 1 nearest and 18 next waypoints) in the car’s reference frame. The waypoints must be converted to the car’s reference.
+
+4. Create another spline with the previous path as the starting points, Then add points from the waypointSpline into this.
+
+5. Create another spline to smoothen the velocity changes from the current velocity 
+to the destination velocity (s/time). This ensures that we can follow our ideal trajectory without violating jerk / speed constraints.
+
+6. Convert these points back to the world coordinates and feed them back to the simulator.
 
 
 ### Simulator. You can download the Term3 Simulator BETA which contains the Path Planning Project from the [releases tab](https://github.com/udacity/self-driving-car-sim/releases).
