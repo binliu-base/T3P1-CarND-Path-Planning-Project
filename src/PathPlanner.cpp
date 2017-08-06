@@ -60,7 +60,7 @@
         spline hVelocitySpline;
         CreateVelocitySplineFirstCycle(hVelocitySpline);     
 
-        Tools::traceStream << "timestep:" <<gnTimeStep << " " <<"previous path size: " << gnPrPathSz << endl;                                               
+        // Tools::traceStream << "timestep:" <<gnTimeStep << " " <<"previous path size: " << gnPrPathSz << endl;                                               
 
         /* If this is car starting ---  no paths */
         if (gnPrPathSz == 0)
@@ -76,7 +76,7 @@
         /* Invoke the planner if there is no lane change in progress */
         if (goCar.gbLaneChange == false)
         {
-            Tools::traceStream << "Start BehaviorPlanner()" << endl;                        
+            // Tools::traceStream << "Start BehaviorPlanner()" << endl;                        
             BehaviourPlanner();    
 
         }

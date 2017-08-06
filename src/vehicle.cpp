@@ -112,7 +112,8 @@ void Vehicle::update_state(const vvvd_t &vvvLanes, vvi_t &vvCars, vi_t &vLaneRan
 
         /* Compute the lane scores */
         vResult.resize(SIM_NUM_LANES);
-        system("clear");
+        int clean = system("clear");
+
         // printf ("%s %s  %s  %s  %s\n","Lane", "Scores","LCS","DS","VS" );        
         for (int i = 0; i < SIM_NUM_LANES; i++)
         {
